@@ -35,13 +35,30 @@ class Button(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = 2000, 2000
 
 
-chicken = Button(games, all_sprites, load_image("images/chickens.png"))
-tanks = Button(games, all_sprites, load_image("images/tanks.png"))
+def a():
+    print('chichken')
 
+
+def b():
+    print('tanks')
+
+
+chicken = Button(games, all_sprites, pygame.transform.scale(load_image("chickens.png"), (150, 150)))
+chicken.press = a
+tanks = Button(games, all_sprites, pygame.transform.scale(load_image("tanks.png"), (150, 150)))
+tanks.press = b
+chicken.rect = chicken.rect.move(100, 100)
+tanks.rect = tanks.rect.move(300, 100)
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = event.pos
+            for b in games.sprites():
+                if b.rect.collidepoint(x, y):
+                    b.press()
+                    break
     screen.fill((255, 255, 255))
     all_sprites.draw(screen)
     all_sprites.update()
