@@ -6,7 +6,7 @@ WIDTH, HEIGHT = 800, 600
 GRAVITY = 700
 PLAYERONEKEY = pygame.K_SPACE
 PLAYERTWOKEY = pygame.K_UP
-SPEED = 50
+SPEED = 100
 LEVEL_WIDTH = 1200
 
 
@@ -27,14 +27,6 @@ def load_image(name, colorkey=None):
 def terminate():
     pygame.quit()
     sys.exit()
-
-
-player_image = pygame.Surface((64, 64), pygame.SRCALPHA, 32)
-pygame.draw.rect(player_image, pygame.Color("blue"), (0, 0, 64, 64), 0)
-wall_image = pygame.Surface((64, 64), pygame.SRCALPHA, 32)
-pygame.draw.rect(player_image, pygame.Color("blue"), (0, 0, 64, 64), 0)
-platform_image = pygame.Surface((64, 64), pygame.SRCALPHA, 32)
-pygame.draw.rect(player_image, pygame.Color("blue"), (0, 0, 64, 64), 0)
 
 
 class Player(pygame.sprite.Sprite):
@@ -68,6 +60,8 @@ class Player(pygame.sprite.Sprite):
         else:
             self.vx = SPEED
             self.gravity = GRAVITY
+        if self.rect.x + self.rect.w >= WIDTH:
+            self.vx = 0
         if self.rect.x + self.rect.w < 0 or pygame.sprite.spritecollideany(self, death):
             self.kill()
 
@@ -94,12 +88,12 @@ class Platform(pygame.sprite.Sprite):
         super().__init__(platforms, all_sprites)
         self.image = pygame.Surface((w - 1, h), pygame.SRCALPHA, 32)
         pygame.draw.rect(self.image, pygame.Color("grey"), (0, 0, w - 1, h), 0)
-        Wall(x, y, 10, h)
+        Wall(x, y, 5, h)
         self.pos_x, self.pos_y = x, y
         self.rect = pygame.Rect(self.pos_x + 1, self.pos_y, w - 1, h)
 
     def update(self):
-        self.rect.x, self.rect.y = self.pos_x + 10, self.pos_y
+        self.rect.x, self.rect.y = self.pos_x + 5, self.pos_y
 
 
 class Death(pygame.sprite.Sprite):
@@ -117,20 +111,18 @@ class Death(pygame.sprite.Sprite):
 class Camera:
     def __init__(self):
         self.dx = 0
-        self.average = 0
-        self.length_left = LEVEL_WIDTH - WIDTH
+        self.length_left = LEVEL_WIDTH - WIDTH // 2
 
-    def update(self, targets):
-        self.average = sum(map(lambda g: g.rect.x, targets)) / len(targets)
-        # print(self.average)
-        if self.length_left <= 0:
+    def update(self, ticks):
+        if int(self.length_left) <= 0:
             self.dx = 0
-        elif int(self.average) > WIDTH // 2:
-            self.dx = WIDTH // 2 - int(self.average)
+        elif int(self.length_left) >= LEVEL_WIDTH - WIDTH:
+            self.dx = 0
+            self.length_left += -SPEED * ticks / 1000
         else:
-            self.dx = 0
-        print(self.dx, self.length_left)
-        self.length_left += self.dx
+            self.dx = -SPEED * ticks / 1000
+            self.length_left += self.dx
+        print(int(self.length_left))
 
     def apply(self, obj):
         obj.pos_x += self.dx
@@ -173,8 +165,10 @@ if __name__ == '__main__':
                     player1.jump()
                 if event.key == PLAYERTWOKEY:
                     player2.jump()
-        char.update(clock.tick())
-        camera.update(players)
+        tick_passed = clock.tick()
+        char.update(tick_passed)
+        camera.update(tick_passed)
+        players = list(filter(lambda g: g.rect.x + g.rect.w > 0, players))
         for sprite in all_sprites:
             camera.apply(sprite)
         for sprite in char:
