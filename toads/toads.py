@@ -24,6 +24,24 @@ def load_image(name, colorkey=None):
     return image
 
 
+def load_map(filename):
+    filename = 'data/maps/' + filename
+    with open(filename, 'r') as mapContent:
+        mapSettings, mapContent = tuple([line.strip() for line in mapContent])
+        level_map = [line.strip().split('.') for line in mapContent.split(';')]
+    for i in level_map[:-1]:
+        print(i)
+        if len(i):
+            if i[0] == 'p':
+                Platform(int(i[1]), int(i[2]), int(i[3]), int(i[4]))
+            elif i[0] == 'd':
+                Death(int(i[1]), int(i[2]), int(i[3]), int(i[4]))
+            else:
+                print('unknown')
+    global LEVEL_WIDTH, SPEED, GRAVITY
+    LEVEL_WIDTH, SPEED, GRAVITY = tuple(map(lambda x: int(x), mapSettings.split(', ')))
+
+
 def terminate():
     pygame.quit()
     sys.exit()
@@ -39,6 +57,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.y = self.pos_y = HEIGHT // 3 - self.rect.h // 2
         self.vx, self.vy = SPEED, 0
         self.gravity = GRAVITY
+        self.is_alive = True
 
     def update(self, ticks=0):
         if ticks:
@@ -64,6 +83,7 @@ class Player(pygame.sprite.Sprite):
             self.vx = 0
         if self.rect.x + self.rect.w < 0 or pygame.sprite.spritecollideany(self, death):
             self.kill()
+            self.is_alive = False
 
     def jump(self):
         self.pos_y -= 1
@@ -122,7 +142,6 @@ class Camera:
         else:
             self.dx = -SPEED * ticks / 1000
             self.length_left += self.dx
-        print(int(self.length_left))
 
     def apply(self, obj):
         obj.pos_x += self.dx
@@ -148,31 +167,34 @@ if __name__ == '__main__':
     players.append(player1)
     player2 = Player('red')
     players.append(player2)
-    Platform(10, 500, 700, 30)
-    Platform(100, 300, 400, 210)
-    Platform(900, 100, 400, 210)
-    Platform(810, 590, 600, 30)
-    Death(400, 100, 100, 100)
+    load_map('toadmap.txt')
     camera = Camera()
 
     while running:
-        screen.fill((pygame.Color('black')))
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == PLAYERONEKEY:
-                    player1.jump()
-                if event.key == PLAYERTWOKEY:
-                    player2.jump()
-        tick_passed = clock.tick()
-        char.update(tick_passed)
-        camera.update(tick_passed)
         players = list(filter(lambda g: g.rect.x + g.rect.w > 0, players))
-        for sprite in all_sprites:
-            camera.apply(sprite)
-        for sprite in char:
-            camera.apply(sprite)
-        all_sprites.draw(screen)
-        char.draw(screen)
-        pygame.display.flip()
+        players = list(filter(lambda g: g.is_alive, players))
+        if len(players):
+            screen.fill((pygame.Color('black')))
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == PLAYERONEKEY:
+                        player1.jump()
+                    if event.key == PLAYERTWOKEY:
+                        player2.jump()
+            tick_passed = clock.tick()
+            char.update(tick_passed)
+            camera.update(tick_passed)
+
+            for sprite in all_sprites:
+                camera.apply(sprite)
+            for sprite in char:
+                camera.apply(sprite)
+            all_sprites.draw(screen)
+            char.draw(screen)
+            pygame.display.flip()
+        else:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
