@@ -8,6 +8,7 @@ PLAYERONEKEY = pygame.K_SPACE
 PLAYERTWOKEY = pygame.K_UP
 SPEED = 100
 LEVEL_WIDTH = 1200
+PLAYER_SIZE = 64
 
 
 def load_image(name, colorkey=None):
@@ -26,9 +27,9 @@ def load_image(name, colorkey=None):
 
 def load_map(filename):
     filename = 'data/maps/' + filename
-    with open(filename, 'r') as mapContent:
-        mapSettings, mapContent = tuple([line.strip() for line in mapContent])
-        level_map = [line.strip().split('.') for line in mapContent.split(';')]
+    with open(filename, 'r') as mapFile:
+        mapSettings, mapFile = tuple([line.strip() for line in mapFile])
+        level_map = [line.strip().split('.') for line in mapFile.split(';')]
     for i in level_map[:-1]:
         print(i)
         if len(i):
@@ -38,8 +39,8 @@ def load_map(filename):
                 Death(int(i[1]), int(i[2]), int(i[3]), int(i[4]))
             else:
                 print('unknown')
-    global LEVEL_WIDTH, SPEED, GRAVITY
-    LEVEL_WIDTH, SPEED, GRAVITY = tuple(map(lambda x: int(x), mapSettings.split(', ')))
+    global LEVEL_WIDTH, SPEED, GRAVITY, PLAYER_SIZE
+    LEVEL_WIDTH, SPEED, GRAVITY, PLAYER_SIZE = tuple(map(lambda x: int(x), mapSettings.split(', ')))
 
 
 def terminate():
@@ -47,17 +48,52 @@ def terminate():
     sys.exit()
 
 
+def win(screen_out, player):
+    font = pygame.font.SysFont('arial', 50)
+    text = font.render(f'player {player.number} won', True, player.color)
+    text_x = WIDTH // 2 - text.get_width() // 2
+    text_y = HEIGHT // 2 - text.get_height() // 2
+    screen_out.blit(text, (text_x, text_y))
+
+
+def tie(screen_out):
+    font = pygame.font.SysFont('arial', 50)
+    text = font.render(f'tie', True, pygame.Color('white'))
+    text_x = WIDTH // 2 - text.get_width() // 2
+    text_y = HEIGHT // 2 - text.get_height() // 2
+    screen_out.blit(text, (text_x, text_y))
+
+
+def check_collision(first, second):
+    y = (first.pos_y + first.rect.h) - second.rect.y
+    y2 = first.pos_y - (second.rect.y + second.rect.h)
+    if abs(y) > abs(y2):
+        y = y2
+    else:
+        y = y
+    x = first.pos_x + first.rect.w - second.rect.x
+    if abs(y) > abs(x):
+        first.pos_x -= x
+        first.vx = 0
+    else:
+        first.pos_y -= y
+        first.vy = 0
+        first.gravity = 0
+
+
 class Player(pygame.sprite.Sprite):
-    def __init__(self, color):
+    def __init__(self, color, player_number):
         super().__init__(char)
-        self.image = pygame.Surface((64, 64), pygame.SRCALPHA, 32)
-        pygame.draw.rect(self.image, pygame.Color(color), (0, 0, 64, 64), 0)
+        self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE), pygame.SRCALPHA, 32)
+        pygame.draw.rect(self.image, pygame.Color(color), (0, 0, PLAYER_SIZE, PLAYER_SIZE), 0)
         self.rect = self.image.get_rect()
         self.rect.x = self.pos_x = 0
         self.rect.y = self.pos_y = HEIGHT // 3 - self.rect.h // 2
         self.vx, self.vy = SPEED, 0
         self.gravity = GRAVITY
         self.is_alive = True
+        self.color = pygame.Color(color)
+        self.number = player_number
 
     def update(self, ticks=0):
         if ticks:
@@ -67,53 +103,32 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = self.pos_x
         self.rect.y = self.pos_y
         if pygame.sprite.spritecollideany(self, platforms):
-            if self.vy >= 0:
-                self.gravity = 0
-            else:
-                self.rect.y = self.pos_y = self.pos_y + 1
-                self.gravity = GRAVITY
-            self.vy = 0
-        elif pygame.sprite.spritecollideany(self, walls):
-            self.vx = 0
-            self.gravity = GRAVITY
+            for shprite in pygame.sprite.spritecollide(self, platforms, False):
+                check_collision(self, shprite)
         else:
-            self.vx = SPEED
             self.gravity = GRAVITY
+            self.vx = SPEED
         if self.rect.x + self.rect.w >= WIDTH:
             self.vx = 0
-        if self.rect.x + self.rect.w < 0 or pygame.sprite.spritecollideany(self, death):
+        if self.rect.x + self.rect.w < 0 or pygame.sprite.spritecollideany(self, death) or self.rect.y >= HEIGHT:
             self.kill()
             self.is_alive = False
 
     def jump(self):
-        self.pos_y -= 1
         self.vy = -350
         self.update()
-
-
-class Wall(pygame.sprite.Sprite):
-    def __init__(self, x, y, w, h):
-        super().__init__(walls, all_sprites)
-        self.image = pygame.Surface((w, h), pygame.SRCALPHA, 32)
-        pygame.draw.rect(self.image, pygame.Color("purple"), (0, 0, w, h), 0)
-        self.pos_x, self.pos_y = x, y
-        self.rect = pygame.Rect(self.pos_x, self.pos_y, w, h)
-
-    def update(self):
-        self.rect.x, self.rect.y = self.pos_x, self.pos_y
 
 
 class Platform(pygame.sprite.Sprite):
     def __init__(self, x, y, w, h):
         super().__init__(platforms, all_sprites)
-        self.image = pygame.Surface((w - 1, h), pygame.SRCALPHA, 32)
-        pygame.draw.rect(self.image, pygame.Color("grey"), (0, 0, w - 1, h), 0)
-        Wall(x, y, 5, h)
+        self.image = pygame.Surface((w, h), pygame.SRCALPHA, 32)
+        pygame.draw.rect(self.image, pygame.Color("grey"), (0, 0, w, h), 0)
         self.pos_x, self.pos_y = x, y
-        self.rect = pygame.Rect(self.pos_x + 1, self.pos_y, w - 1, h)
+        self.rect = pygame.Rect(self.pos_x, self.pos_y, w, h)
 
     def update(self):
-        self.rect.x, self.rect.y = self.pos_x + 5, self.pos_y
+        self.rect.x, self.rect.y = self.pos_x, self.pos_y
 
 
 class Death(pygame.sprite.Sprite):
@@ -150,6 +165,7 @@ class Camera:
 
 if __name__ == '__main__':
     pygame.init()
+    pygame.font.init()
     pygame.display.set_caption('Toads')
     size = WIDTH, HEIGHT
     screen = pygame.display.set_mode(size)
@@ -162,18 +178,18 @@ if __name__ == '__main__':
     death = pygame.sprite.Group()
     char = pygame.sprite.Group()
 
-    players = []
-    player1 = Player('blue')
-    players.append(player1)
-    player2 = Player('red')
-    players.append(player2)
     load_map('toadmap.txt')
+    players = []
+    player1 = Player('blue', 1)
+    players.append(player1)
+    player2 = Player('red', 2)
+    players.append(player2)
     camera = Camera()
 
     while running:
         players = list(filter(lambda g: g.rect.x + g.rect.w > 0, players))
         players = list(filter(lambda g: g.is_alive, players))
-        if len(players):
+        if len(players) > 1:
             screen.fill((pygame.Color('black')))
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -186,15 +202,20 @@ if __name__ == '__main__':
             tick_passed = clock.tick()
             char.update(tick_passed)
             camera.update(tick_passed)
-
             for sprite in all_sprites:
                 camera.apply(sprite)
             for sprite in char:
                 camera.apply(sprite)
             all_sprites.draw(screen)
             char.draw(screen)
-            pygame.display.flip()
+        elif len(players):
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+            win(screen, players[0])
         else:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+            tie(screen)
+        pygame.display.flip()
