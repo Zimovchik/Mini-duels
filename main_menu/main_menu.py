@@ -9,7 +9,10 @@ screen = pygame.display.set_mode(size)
 
 all_sprites = pygame.sprite.Group()
 games = pygame.sprite.Group()
+setting_btns = pygame.sprite.Group()
 running = True
+setting_open = False
+volume_on = False
 
 
 def load_image(name, colorkey=None):
@@ -34,6 +37,9 @@ class Button(pygame.sprite.Sprite):
     def remove(self):
         self.rect.x, self.rect.y = 2000, 2000
 
+    def im_change(self, im):
+        self.image = im
+
 
 def a():
     print('chichken')
@@ -43,24 +49,71 @@ def b():
     print('tanks')
 
 
+def c():
+    print('toads')
+
+
+def open_settings():
+    global setting_open
+    setting_open = True
+
+
+def close_settings():
+    global setting_open
+    setting_open = False
+
+
+def volume_change(btn=None):
+    global volume_on
+    global volume
+    if volume_on:
+        volume.im_change(pygame.transform.scale(load_image("volumeoff.png"), (100, 100)))
+    else:
+        volume.im_change(pygame.transform.scale(load_image("volume.png"), (100, 100)))
+    volume_on = not volume_on
+
+
 chicken = Button(games, all_sprites, pygame.transform.scale(load_image("chickens.png"), (150, 150)))
 chicken.press = a
 tanks = Button(games, all_sprites, pygame.transform.scale(load_image("tanks.png"), (150, 150)))
 tanks.press = b
+toads = Button(games, all_sprites, pygame.transform.scale(load_image("toads.png"), (150, 150)))
+toads.press = c
+settings = Button(games, all_sprites, pygame.transform.scale(load_image("settings.png"), (50, 50)))
+settings.press = open_settings
 chicken.rect = chicken.rect.move(100, 100)
 tanks.rect = tanks.rect.move(300, 100)
+toads.rect = toads.rect.move(500, 100)
+settings.rect = settings.rect.move(750, 550)
+
+volume = Button(setting_btns, all_sprites, pygame.transform.scale(load_image("volume.png"), (100, 100)))
+volume.press = volume_change
+volume.rect = volume.rect.move(100, 100)
+
+back_btn = Button(setting_btns, all_sprites, pygame.transform.scale(load_image("back_btn.png"), (50, 50)))
+back_btn.press = close_settings
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             x, y = event.pos
-            for b in games.sprites():
-                if b.rect.collidepoint(x, y):
-                    b.press()
-                    break
-    screen.fill((255, 255, 255))
-    all_sprites.draw(screen)
-    all_sprites.update()
+            if not setting_open:
+                for b in games.sprites():
+                    if b.rect.collidepoint(x, y):
+                        b.press()
+                        break
+            else:
+                for b in setting_btns.sprites():
+                    if b.rect.collidepoint(x, y):
+                        b.press()
+                        break
+    screen.fill((124, 236, 253))
+    if not setting_open:
+        games.draw(screen)
+        all_sprites.update()
+    else:
+        setting_btns.draw(screen)
+        setting_btns.update()
     pygame.display.flip()
 pygame.quit()
