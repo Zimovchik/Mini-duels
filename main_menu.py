@@ -1,15 +1,21 @@
 import os
 import sys
-
 import pygame
+
+from tanks import tanks_run
+from toads import toads_run
+from chickens import chickens_run
 
 pygame.init()
 size = width, height = 800, 600
 screen = pygame.display.set_mode(size)
+# sprite groups
 
 all_sprites = pygame.sprite.Group()
 games = pygame.sprite.Group()
 setting_btns = pygame.sprite.Group()
+
+# window control vars
 running = True
 setting_open = False
 volume_on = False
@@ -41,16 +47,19 @@ class Button(pygame.sprite.Sprite):
         self.image = im
 
 
-def a():
+def a():  # chicken btn func
     print('chichken')
+    # chickens_run()
 
 
-def b():
+def b():  # tanks btn func
     print('tanks')
+    tanks_run()
 
 
-def c():
-    print('toads')
+def c():  # toads btn func
+    print("toads")
+    # toads_run()
 
 
 def open_settings():
@@ -73,6 +82,8 @@ def volume_change(btn=None):
     volume_on = not volume_on
 
 
+# initializing games' buttons
+
 chicken = Button(games, all_sprites, pygame.transform.scale(load_image("chickens.png"), (150, 150)))
 chicken.press = a
 tanks = Button(games, all_sprites, pygame.transform.scale(load_image("tanks.png"), (150, 150)))
@@ -86,12 +97,15 @@ tanks.rect = tanks.rect.move(300, 100)
 toads.rect = toads.rect.move(500, 100)
 settings.rect = settings.rect.move(750, 550)
 
+# initializing settings
+
 volume = Button(setting_btns, all_sprites, pygame.transform.scale(load_image("volume.png"), (100, 100)))
 volume.press = volume_change
 volume.rect = volume.rect.move(100, 100)
 
 back_btn = Button(setting_btns, all_sprites, pygame.transform.scale(load_image("back_btn.png"), (50, 50)))
 back_btn.press = close_settings
+# main cycle
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:

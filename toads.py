@@ -163,59 +163,58 @@ class Camera:
         obj.update()
 
 
-if __name__ == '__main__':
-    pygame.init()
-    pygame.font.init()
-    pygame.display.set_caption('Toads')
-    size = WIDTH, HEIGHT
-    screen = pygame.display.set_mode(size)
-    clock = pygame.time.Clock()
-    running = True
+pygame.init()
+pygame.font.init()
+pygame.display.set_caption('Toads')
+size = WIDTH, HEIGHT
+screen = pygame.display.set_mode(size)
+clock = pygame.time.Clock()
+running = True
 
-    all_sprites = pygame.sprite.Group()
-    platforms = pygame.sprite.Group()
-    walls = pygame.sprite.Group()
-    death = pygame.sprite.Group()
-    char = pygame.sprite.Group()
+all_sprites = pygame.sprite.Group()
+platforms = pygame.sprite.Group()
+walls = pygame.sprite.Group()
+death = pygame.sprite.Group()
+char = pygame.sprite.Group()
 
-    load_map('toadmap.txt')
-    players = []
-    player1 = Player('blue', 1)
-    players.append(player1)
-    player2 = Player('red', 2)
-    players.append(player2)
-    camera = Camera()
+load_map('toadmap.txt')
+players = []
+player1 = Player('blue', 1)
+players.append(player1)
+player2 = Player('red', 2)
+players.append(player2)
+camera = Camera()
 
-    while running:
-        players = list(filter(lambda g: g.rect.x + g.rect.w > 0, players))
-        players = list(filter(lambda g: g.is_alive, players))
-        if len(players) > 1:
-            screen.fill((pygame.Color('black')))
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                if event.type == pygame.KEYDOWN:
-                    if event.key == PLAYERONEKEY:
-                        player1.jump()
-                    if event.key == PLAYERTWOKEY:
-                        player2.jump()
-            tick_passed = clock.tick()
-            char.update(tick_passed)
-            camera.update(tick_passed)
-            for sprite in all_sprites:
-                camera.apply(sprite)
-            for sprite in char:
-                camera.apply(sprite)
-            all_sprites.draw(screen)
-            char.draw(screen)
-        elif len(players):
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-            win(screen, players[0])
-        else:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-            tie(screen)
-        pygame.display.flip()
+while running:
+    players = list(filter(lambda g: g.rect.x + g.rect.w > 0, players))
+    players = list(filter(lambda g: g.is_alive, players))
+    if len(players) > 1:
+        screen.fill((pygame.Color('black')))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == PLAYERONEKEY:
+                    player1.jump()
+                if event.key == PLAYERTWOKEY:
+                    player2.jump()
+        tick_passed = clock.tick()
+        char.update(tick_passed)
+        camera.update(tick_passed)
+        for sprite in all_sprites:
+            camera.apply(sprite)
+        for sprite in char:
+            camera.apply(sprite)
+        all_sprites.draw(screen)
+        char.draw(screen)
+    elif len(players):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        win(screen, players[0])
+    else:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        tie(screen)
+    pygame.display.flip()
