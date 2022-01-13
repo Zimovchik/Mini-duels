@@ -19,7 +19,7 @@ GRAVITY = 0.2
 platforms_sprites = pygame.sprite.Group()
 chicken_sprites = pygame.sprite.Group()
 
-chicken_pic = 'chick.png'  # Два варианта есть в принципе в папке data
+chicken_pic = 'anime chicken1.png'  # Два варианта есть в принципе в папке data
 platform_pic = 'block.png'  # Тоже есть несколко вариантов, но этот лучший
 background_pic = ''  # Пока не выбрали
 
@@ -63,7 +63,7 @@ def generate_level(level):
 
 
 def load_level(filename):
-    filename = "data/" + filename
+    filename = "data/maps/" + filename
     # читаем уровень, убирая символы перевода строки
     with open(filename, 'r') as mapFile:
         level_map = [line.strip() for line in mapFile]

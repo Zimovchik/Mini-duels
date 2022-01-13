@@ -2,8 +2,8 @@ import os
 import sys
 import pygame
 
-from tanks import tanks_run
-from toads import toads_run
+# from tanks import tanks_run
+# from toads import toads_run
 from chickens import chickens_run
 
 pygame.init()
@@ -19,6 +19,11 @@ setting_btns = pygame.sprite.Group()
 running = True
 setting_open = False
 volume_on = False
+button_registration = False
+player_number = 0
+new_btn = None
+PLAYERONEKEY = pygame.K_SPACE
+PLAYERTWOKEY = pygame.K_UP
 
 
 def load_image(name, colorkey=None):
@@ -47,6 +52,7 @@ class Button(pygame.sprite.Sprite):
         self.image = im
 
 
+# This funcs are creating only to paste them into button classes, so they are with no any specific title
 def a():  # chicken btn func
     print('chichken')
     # chickens_run()
@@ -54,7 +60,7 @@ def a():  # chicken btn func
 
 def b():  # tanks btn func
     print('tanks')
-    tanks_run()
+    # tanks_run()
 
 
 def c():  # toads btn func
@@ -70,6 +76,20 @@ def open_settings():
 def close_settings():
     global setting_open
     setting_open = False
+
+
+def p1bind_change():
+    global button_registration
+    global player_number
+    player_number = 1
+    button_registration = True
+
+
+def p2bind_change():
+    global button_registration
+    global player_number
+    player_number = 2
+    button_registration = True
 
 
 def volume_change(btn=None):
@@ -105,6 +125,12 @@ volume.rect = volume.rect.move(100, 100)
 
 back_btn = Button(setting_btns, all_sprites, pygame.transform.scale(load_image("back_btn.png"), (50, 50)))
 back_btn.press = close_settings
+# Changing player button binds
+
+player1_btn_bind = Button(setting_btns, all_sprites,
+                          pygame.transform.scale(load_image("p1bind-change.png"), (100, 100)))
+player2_btn_bind = Button(setting_btns, all_sprites,
+                          pygame.transform.scale(load_image("p2bind-change.png"), (100, 100)))
 # main cycle
 while running:
     for event in pygame.event.get():
@@ -118,6 +144,15 @@ while running:
                         b.press()
                         break
             else:
+                if button_registration:
+                    if event.type == pygame.KEYDOWN:
+                        new_btn = event.key
+                        if player_number == 1:
+                            PLAYERONEKEY = new_btn
+                        elif player_number == 2:
+                            PLAYERTWOKEY = new_btn
+                        button_registration = False
+                        player_number = 0
                 for b in setting_btns.sprites():
                     if b.rect.collidepoint(x, y):
                         b.press()
