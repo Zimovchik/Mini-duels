@@ -19,6 +19,8 @@ vertical_borders = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 tanks = pygame.sprite.Group()
 
+players = [True, True]
+
 
 def rot_center(image, rect, angle):
     """rotate an image while keeping its center"""
@@ -52,23 +54,35 @@ class Bullet(pygame.sprite.Sprite):
         self.vx = BULLET_SPEED * cos(radians(angle + 90))
         self.vy = -BULLET_SPEED * sin(radians(angle + 90))
         self.pos = x, y
+        self.player_number = pn
 
     def update(self):
         self.pos = self.pos[0] + self.vx, self.pos[1] + self.vy
         self.rect.x, self.rect.y = self.pos
-        #
+        if pygame.sprite.spritecollideany(self, vertical_borders) or pygame.sprite.spritecollideany(self,
+                                                                                                    horizontal_borders):
+            self.kill()
+        if pygame.sprite.spritecollideany(self, tanks):
+            sprite = pygame.sprite.spritecollideany(self, tanks)
+            if sprite.get_player_number() != self.player_number:
+                sprite.kill()
+                sprite.death()
+                self.kill()
+
+    def get_player_number(self):
+        return self.player_number
 
 
 class Tank(pygame.sprite.Sprite):
-    def __init__(self, color, player_number, im_name):
-        super().__init__(all_sprites)
+    def __init__(self, color, player_number, im_name, pos):
+        super().__init__(all_sprites, tanks)
         self.color = color
         self.number = player_number
         self.image = load_image(im_name)
         self.rect = self.image.get_rect()
-        self.pos = 100, 100
-        self.rect.x = 100
-        self.rect.y = 100
+        self.pos = pos
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
         self.vx, self.vy = 0, 0
         self.rot = 0
         self.rot_speed = 0.125
@@ -80,13 +94,14 @@ class Tank(pygame.sprite.Sprite):
         self.player_number = player_number
 
     def update(self, ticks=0):
-        if not self.rotating:
-            self.pos = self.pos[0] + self.vx, self.pos[1] + self.vy
-            self.rect.x, self.rect.y = int(self.pos[0]), int(self.pos[1])
-        if not self.player_alive:
-            return
-        if ticks and self.rotating:
-            self.rotate(ticks)
+        if self.player_alive:
+            if not self.rotating:
+                self.pos = self.pos[0] + self.vx, self.pos[1] + self.vy
+                self.rect.x, self.rect.y = int(self.pos[0]), int(self.pos[1])
+            if not self.player_alive:
+                return
+            if ticks and self.rotating:
+                self.rotate(ticks)
 
     def rotate(self, ticks):
         self.image, self.rect = rot_center(self.image_orig, self.rect, self.rot)
@@ -94,18 +109,47 @@ class Tank(pygame.sprite.Sprite):
         self.rot %= 360
 
     def shoot(self):
-        Bullet(10, *self.rect.center, self.rot, self.player_number)
-        self.vx, self.vy = TANK_SPEED * cos(radians(self.rot + 90)), -TANK_SPEED * sin(radians(self.rot + 90))
-        self.rotating = False
+        if self.player_alive:
+            Bullet(10, *self.rect.center, self.rot, self.player_number)
+            self.vx, self.vy = TANK_SPEED * cos(radians(self.rot + 90)), -TANK_SPEED * sin(radians(self.rot + 90))
+            self.rotating = False
 
     def rotate_change(self):
         self.rotating = True
         self.rot_speed = -self.rot_speed
         self.vx, self.vy = 0, 0
 
+    def get_rot(self):
+        return self.rot
 
-p1 = Tank("red", 1, "tank player1.png")
-p2 = Tank("blue", 2, "tank player2.png")
+    def get_rot_speed(self):
+        return self.rot_speed
+
+    def get_pos(self):
+        return self.pos
+
+    def get_rect(self):
+        return self.rect
+
+    def get_player_number(self):
+        return self.player_number
+
+    def get_tank_info(self):
+        return (
+            self.get_pos(),
+            self.get_rot_speed(),
+            self.get_rect(),
+            self.get_player_number()
+        )
+
+    def death(self):
+        self.player_alive = False
+        global players
+        players[self.player_number - 1] = self.player_alive
+
+
+p1 = Tank("red", 1, "tank player1.png", (100, 100))
+p2 = Tank("blue", 2, "tank player2.png", (200, 200))
 pygame.init()
 pygame.display.set_caption('Tanks')
 size = WIDTH, HEIGHT
@@ -137,4 +181,6 @@ while running:
     p2bullets.draw(screen)
     p1bullets.update()
     p2bullets.update()
+    if not all(players):
+        print(f"Выиграл игрок {players.index(False) + 1}")
     pygame.display.flip()
