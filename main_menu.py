@@ -68,40 +68,6 @@ def c():  # toads btn func
     # toads_run()
 
 
-def open_settings():
-    global setting_open
-    setting_open = True
-
-
-def close_settings():
-    global setting_open
-    setting_open = False
-
-
-def p1bind_change():
-    global button_registration
-    global player_number
-    player_number = 1
-    button_registration = True
-
-
-def p2bind_change():
-    global button_registration
-    global player_number
-    player_number = 2
-    button_registration = True
-
-
-def volume_change(btn=None):
-    global volume_on
-    global volume
-    if volume_on:
-        volume.im_change(pygame.transform.scale(load_image("volumeoff.png"), (100, 100)))
-    else:
-        volume.im_change(pygame.transform.scale(load_image("volume.png"), (100, 100)))
-    volume_on = not volume_on
-
-
 # initializing games' buttons
 
 chicken = Button(games, all_sprites, pygame.transform.scale(load_image("chickens.png"), (150, 150)))
@@ -110,27 +76,12 @@ tanks = Button(games, all_sprites, pygame.transform.scale(load_image("tanks.png"
 tanks.press = b
 toads = Button(games, all_sprites, pygame.transform.scale(load_image("toads.png"), (150, 150)))
 toads.press = c
-settings = Button(games, all_sprites, pygame.transform.scale(load_image("settings.png"), (50, 50)))
-settings.press = open_settings
 chicken.rect = chicken.rect.move(100, 100)
 tanks.rect = tanks.rect.move(300, 100)
 toads.rect = toads.rect.move(500, 100)
-settings.rect = settings.rect.move(750, 550)
 
 # initializing settings
 
-volume = Button(setting_btns, all_sprites, pygame.transform.scale(load_image("volume.png"), (100, 100)))
-volume.press = volume_change
-volume.rect = volume.rect.move(100, 100)
-
-back_btn = Button(setting_btns, all_sprites, pygame.transform.scale(load_image("back_btn.png"), (50, 50)))
-back_btn.press = close_settings
-# Changing player button binds
-
-player1_btn_bind = Button(setting_btns, all_sprites,
-                          pygame.transform.scale(load_image("p1bind-change.png"), (100, 100)))
-player2_btn_bind = Button(setting_btns, all_sprites,
-                          pygame.transform.scale(load_image("p2bind-change.png"), (100, 100)))
 # main cycle
 while running:
     for event in pygame.event.get():
