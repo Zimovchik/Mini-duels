@@ -9,10 +9,12 @@ PLAYERTWOKEY = pygame.K_UP
 SPEED = 100
 LEVEL_WIDTH = 1200
 PLAYER_SIZE = 64
+K = 0.5
+FPS = 120
 
 
 def load_image(name, colorkey=None):
-    fullname = os.path.join('data/images', name)
+    fullname = os.path.join('data', name)
     if not os.path.isfile(fullname):
         print(f"Файл с изображением '{fullname}' не найден")
         sys.exit()
@@ -38,14 +40,9 @@ def load_map(filename):
             elif i[0] == 'd':
                 Death(int(i[1]), int(i[2]), int(i[3]), int(i[4]))
             else:
-                print('unknown')
-    global LEVEL_WIDTH, SPEED, GRAVITY, PLAYER_SIZE
+                print('unknohwn')
+    global LEVEL_WIDTH, SPEEhD, GRAVITY, PLAYER_SIZE
     LEVEL_WIDTH, SPEED, GRAVITY, PLAYER_SIZE = tuple(map(lambda x: int(x), mapSettings.split(', ')))
-
-
-def terminate():
-    pygame.quit()
-    sys.exit()
 
 
 def win(screen_out, player):
@@ -79,6 +76,7 @@ def check_collision(first, second):
         first.pos_y -= y
         first.vy = 0
         first.gravity = 0
+        first.cur_frame = (first.cur_frame + 1) % len(first.frames)
 
 
 class Player(pygame.sprite.Sprite):
@@ -94,6 +92,10 @@ class Player(pygame.sprite.Sprite):
         self.is_alive = True
         self.color = pygame.Color(color)
         self.number = player_number
+        self.frames = []
+        self.cut_sheet(load_image('frog.png'), 8, 1)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
 
     def update(self, ticks=0):
         if ticks:
@@ -113,6 +115,17 @@ class Player(pygame.sprite.Sprite):
         if self.rect.x + self.rect.w < 0 or pygame.sprite.spritecollideany(self, death) or self.rect.y >= HEIGHT:
             self.kill()
             self.is_alive = False
+        self.image = self.frames[self.cur_frame]
+
+    def cut_sheet(self, sheet, columns, rows):
+        sheet = pygame.transform.scale(sheet, (PLAYER_SIZE * columns, PLAYER_SIZE * rows))
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
 
     def jump(self):
         self.vy = -350
@@ -163,6 +176,24 @@ class Camera:
         obj.update()
 
 
+class Background(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(background, all_sprites)
+        self.image_1 = load_image('sky.png')
+        j = LEVEL_WIDTH // self.image_1.get_rect().w + 1
+        self.width = self.image_1.get_rect().w * j
+        self.image = pygame.Surface((self.width, HEIGHT), pygame.SRCALPHA, 32)
+        for i in range(j):
+            print(i)
+            self.image.blit(self.image_1, (self.image_1.get_rect().w * i, 0))
+        self.rect = self.image.get_rect()
+        self.pos_x, self.pos_y = 0, 0
+
+    def update(self):
+        self.rect.x = int(self.pos_x * K)
+        self.rect.y = self.pos_y
+
+
 pygame.init()
 pygame.font.init()
 pygame.display.set_caption('Toads')
@@ -176,7 +207,9 @@ platforms = pygame.sprite.Group()
 walls = pygame.sprite.Group()
 death = pygame.sprite.Group()
 char = pygame.sprite.Group()
+background = pygame.sprite.Group()
 
+back = Background()
 load_map('toadmap.txt')
 players = []
 player1 = Player('blue', 1)
@@ -190,6 +223,7 @@ while running:
     players = list(filter(lambda g: g.is_alive, players))
     if len(players) > 1:
         screen.fill((pygame.Color('black')))
+        background.draw(screen)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
