@@ -1,19 +1,23 @@
-import pygame
-from math import cos, sin
-import sys
 import os
+import sys
+from math import cos, sin, radians
+
+import pygame
 
 WIDTH, HEIGHT = 800, 600
 PLAYERONEKEY = pygame.K_SPACE
 PLAYERTWOKEY = pygame.K_UP
 ANGLE_SPEED = 5
-BULLET_SPEED = 30
-
+BULLET_SPEED = 1.5
+BULLET_RADIUS = 10
+TANK_SPEED = 0.2
 all_sprites = pygame.sprite.Group()
 char = pygame.sprite.Group()
-bullets = pygame.sprite.Group()
+p1bullets = pygame.sprite.Group()
+p2bullets = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
+tanks = pygame.sprite.Group()
 
 
 def rot_center(image, rect, angle):
@@ -32,153 +36,105 @@ def load_image(name, colorkey=None):
     return image
 
 
-def win(screen_out, player):
-    font = pygame.font.SysFont('arial', 50)
-    text = font.render(f'player {player.number} won', True, player.color)
-    text_x = WIDTH // 2 - text.get_width() // 2
-    text_y = HEIGHT // 2 - text.get_height() // 2
-    screen_out.blit(text, (text_x, text_y))
-
-
-def tie(screen_out):
-    font = pygame.font.SysFont('arial', 50)
-    text = font.render(f'tie', True, pygame.Color('white'))
-    text_x = WIDTH // 2 - text.get_width() // 2
-    text_y = HEIGHT // 2 - text.get_height() // 2
-    screen_out.blit(text, (text_x, text_y))
-
-
-class Border(pygame.sprite.Sprite):
-    # строго вертикальный или строго горизонтальный отрезок
-    def __init__(self, x1, y1, x2, y2):
-        super().__init__(all_sprites)
-        if x1 == x2:  # вертикальная стенка
-            self.add(vertical_borders)
-            self.image = pygame.Surface([1, y2 - y1])
-            self.rect = pygame.Rect(x1, y1, 1, y2 - y1)
-        else:  # горизонтальная стенка
-            self.add(horizontal_borders)
-            self.image = pygame.Surface([x2 - x1, 1])
-            self.rect = pygame.Rect(x1, y1, x2 - x1, 1)
-
-
-class Player(pygame.sprite.Sprite):
-    def __init__(self, color, player_number, player_image=None):
-        super().__init__(char, all_sprites)
-        self.pos = WIDTH // 2, HEIGHT // 2
-        self.center = self.pos[0] + 32, self.pos[1] + 32
-        self.color = pygame.Color(color)
-        self.image = player_image
-        self.angle = 0
-        self.vx, self.vy = 0, 0
-        self.is_alive = True
-        self.number = player_number
-        self.rect = self.image.get_rect()
-        self.rot = 0
-        self.rot_speed = 0
-        self.last_update = pygame.time.get_ticks()
-        self.image_orig = player_image
-
-    def update(self, b):
-        self.rotate()
-
-    def shoot(self):
-        # self.angle
-        self.angle += 360
-        print(f"angle: {self.angle}")
-
-        Bullet(90, self.center)
-
-    def rotate(self):
-        now = pygame.time.get_ticks()
-        if now - self.last_update > 50:
-            self.last_update = now
-            self.rot = (self.rot + self.rot_speed) % 360
-            self.image = pygame.transform.rotate(self.image_orig, self.rot)
-        self.angle = self.rot - 90
-
-
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self, angle, pos):
-        # super().__init__(bullets, all_sprites)
-        # print(pos, cos(angle), sin(angle))
-        # self.image = bullet_image
-        # self.rect = self.image.get_rect()
-        # self.vx = BULLET_SPEED * cos(angle)
-        # self.vy = BULLET_SPEED * sin(angle)
-        # self.pos_x, self.pos_y = pos
-        # self.pos_x -= 4
-        # self.pos_y -= 4
-        # self.mask = pygame.mask.from_surface(self.image)
-        super().__init__(bullets, all_sprites)
-        self.image = load_image("tanks bullet.png")
+    def __init__(self, radius, x, y, angle, pn):
+        if pn == 1:
+            super().__init__(p1bullets)
+        else:
+            super().__init__(p2bullets)
+        self.radius = radius
+        self.image = pygame.Surface((2 * radius, 2 * radius),
+                                    pygame.SRCALPHA, 32)
+        pygame.draw.circle(self.image, pygame.Color("grey"),
+                           (radius, radius), radius)
         self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = x, y
+        self.vx = BULLET_SPEED * cos(radians(angle + 90))
+        self.vy = -BULLET_SPEED * sin(radians(angle + 90))
+        self.pos = x, y
 
-        self.vx, self.vy = BULLET_SPEED * cos(angle), BULLET_SPEED * sin(angle)
+    def update(self):
+        self.pos = self.pos[0] + self.vx, self.pos[1] + self.vy
+        self.rect.x, self.rect.y = self.pos
+        #
 
-        self.x, self.y = pos
-        self.x = self.x + 32 * cos(angle)
-        self.y = self.y + 32 * sin(angle)
+
+class Tank(pygame.sprite.Sprite):
+    def __init__(self, color, player_number, im_name):
+        super().__init__(all_sprites)
+        self.color = color
+        self.number = player_number
+        self.image = load_image(im_name)
+        self.rect = self.image.get_rect()
+        self.pos = 100, 100
+        self.rect.x = 100
+        self.rect.y = 100
+        self.vx, self.vy = 0, 0
+        self.rot = 0
+        self.rot_speed = 0.125
+        self.last_update = pygame.time.get_ticks()
+        self.image_orig = self.image.copy()
+        self.player_alive = True
+        self.orig_rot_speed = 0.25
+        self.rotating = True
+        self.player_number = player_number
 
     def update(self, ticks=0):
-        if ticks:
-            self.x += self.vx * ticks / 1000
-            self.y += self.vy * ticks / 1000
-        self.rect.x = int(self.x)
-        self.rect.y = int(self.y)
-        if pygame.sprite.spritecollideany(self, horizontal_borders):
-            self.kill()
-        if pygame.sprite.spritecollideany(self, vertical_borders):
-            self.kill()
+        if not self.rotating:
+            self.pos = self.pos[0] + self.vx, self.pos[1] + self.vy
+            self.rect.x, self.rect.y = int(self.pos[0]), int(self.pos[1])
+        if not self.player_alive:
+            return
+        if ticks and self.rotating:
+            self.rotate(ticks)
+
+    def rotate(self, ticks):
+        self.image, self.rect = rot_center(self.image_orig, self.rect, self.rot)
+        self.rot += self.rot_speed
+        self.rot %= 360
+
+    def shoot(self):
+        Bullet(10, *self.rect.center, self.rot, self.player_number)
+        self.vx, self.vy = TANK_SPEED * cos(radians(self.rot + 90)), -TANK_SPEED * sin(radians(self.rot + 90))
+        self.rotating = False
+
+    def rotate_change(self):
+        self.rotating = True
+        self.rot_speed = -self.rot_speed
+        self.vx, self.vy = 0, 0
 
 
-# if ticks:
-#     self.pos_x += self.vx * ticks / 1000
-#     self.pos_y += self.vy * ticks / 1000
-# self.rect.x = int(self.pos_x)
-# self.rect.y = int(self.pos_y)
-# if self.rect.x + self.rect.w >= WIDTH or self.rect.y + self.rect.h >= HEIGHT:
-#     self.kill()
-
-
-bullet_image = pygame.Surface((16, 16), pygame.SRCALPHA, 32)
-pygame.draw.circle(bullet_image, pygame.Color("grey"), (8, 8), 8, 0)
-
+p1 = Tank("red", 1, "tank player1.png")
+p2 = Tank("blue", 2, "tank player2.png")
 pygame.init()
 pygame.display.set_caption('Tanks')
 size = WIDTH, HEIGHT
 screen = pygame.display.set_mode(size)
 clock = pygame.time.Clock()
 running = True
-players = []
-player1 = Player("red", "1", player_image=load_image("tank player1.png"))
-players.append(player1)
-
-Border(5, 5, WIDTH - 5, 5)
-Border(5, HEIGHT - 5, WIDTH - 5, HEIGHT - 5)
-Border(5, 5, 5, HEIGHT - 5)
-Border(WIDTH - 5, 5, WIDTH - 5, HEIGHT - 5)
 
 while running:
-    screen.fill((pygame.Color('black')))
+    screen.fill((50, 255, 139))
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == PLAYERONEKEY:
-                player1.shoot()
-            # if event.key == PLAYERTWOKEY:
-            #     player2.shoot()
-        # if event.type == pygame.KEYUP:
-        #     if event.key == PLAYERONEKEY:
-        #         player1.shoot()
-        # if event.key == PLAYERTWOKEY:
-        #     player2.shoot()
+                p1.shoot()
+            elif event.key == PLAYERTWOKEY:
+                p2.shoot()
+        elif event.type == pygame.KEYUP:
+            if event.key == PLAYERONEKEY:
+                p1.rotate_change()
+            elif event.key == PLAYERTWOKEY:
+                p2.rotate_change()
     tick_passed = clock.tick()
+    p1.update(tick_passed)
+    all_sprites.draw(screen)
     all_sprites.update(tick_passed)
-    for i in players:
-        screen.blit(i.image, (WIDTH // 2, HEIGHT // 2))
-    for i in bullets:
-        screen.blit(i.image, (i.rect.x, i.rect.y))
+    p1bullets.draw(screen)
+    p2bullets.draw(screen)
+    p1bullets.update()
+    p2bullets.update()
     pygame.display.flip()
