@@ -10,12 +10,13 @@ WIDTH = 800  # Ширина создаваемого окна
 HEIGHT = 600  # Высота
 DISPLAY = (WIDTH, HEIGHT)  # Группируем ширину и высоту в одну переменную
 BACKGROUND_COLOR = "#004400"
-PLAYER_SIZE = 128  # Размеры игрока
-TILE_SIZE = 64  # Размер клеток платформ (.)
+PLAYER_SIZE = 64  # Размеры игрока
+TILE_SIZE = 16  # Размер клеток платформ (.)
 P1_BUTTON, P2_BUTTON = pygame.K_a, pygame.K_l  # Кнопки, отвечающие за игроков
-SPEED = 3  # Скорость движения всей системы
-GRAVITY = 0.2
+SPEED = 4  # Скорость движения всей системы
+GRAVITY = 0.3
 
+all_sprites = pygame.sprite.Group()
 platforms_sprites = pygame.sprite.Group()
 chicken_sprites = pygame.sprite.Group()
 
@@ -55,9 +56,9 @@ def generate_level(level):
             if level[y][x] == '.':
                 pass
             elif level[y][x] == '-':
-                objects.append(Platforms(x * 64, y * 64, 64))
+                objects.append(Platforms(x * 16, y * 16, 16))
             elif level[y][x] == '@':  # Игрок в 2 раза больше клеток
-                new_player = Chicken(x * 64, y * 64)
+                new_player = Chicken(x * 16, y * 16)
     # вернем игрока, а также размер поля в клетках
     return new_player, objects, x, y
 
@@ -90,10 +91,13 @@ class Chicken(pygame.sprite.Sprite):  # Класс курицы (игрока)
     def __init__(self, x, y):
         super().__init__(chicken_sprites)
         self.add(chicken_sprites)
+        self.add(all_sprites)
 
         self.image = Chicken.image
         self.rect = self.image.get_rect()  # Размеры
         self.rect.x, self.rect.y = x, y
+
+        self.gravity = GRAVITY
 
         self.vx = SPEED  # Дефолтная скорость движения по иксу (равна скорости камеры)
         # Возможно изменение при контакте с платформами сбоку
@@ -101,7 +105,7 @@ class Chicken(pygame.sprite.Sprite):  # Класс курицы (игрока)
         self.posX, self.posY = x, y
         self.canJump = True
         self.isAlive = True
-        self.goesUp = True  # Летит ли игрок при след нажатии вверх
+        self.goesDown = True  # Летит ли игрок вниз
 
     def move(self):
         # self.rect[0] += SPEED
@@ -109,15 +113,47 @@ class Chicken(pygame.sprite.Sprite):  # Класс курицы (игрока)
 
     def update(self):
         # Игрок на самом окне не двигается, двигается мир вокруг него
-        for spr in platforms_sprites:
+        '''for spr in platforms_sprites:
             if pygame.sprite.collide_mask(self, spr):
+                self.rect.y = spr.rect.y - PLAYER_SIZE + 1
                 self.vy = 0
-                break
-        self.vy += GRAVITY
+                break'''
+        if self.goesDown:
+            check_sprite = pygame.sprite.Sprite()
+            check_sprite.rect = pygame.Rect(self.rect.x, self.rect.y + self.vy + 1, PLAYER_SIZE,
+                                            PLAYER_SIZE)
+            for spr in platforms_sprites:
+                if pygame.sprite.collide_rect(check_sprite, spr):
+                    self.vy = 0
+                    self.canJump = True
+                    self.rect.y = spr.rect.y - PLAYER_SIZE
+                    break
+            else:
+                self.canJump = False
+                self.vy += self.gravity
+        else:
+            check_sprite = pygame.sprite.Sprite()
+            check_sprite.rect = pygame.Rect(self.rect.x, self.rect.y - self.vy - 1, PLAYER_SIZE,
+                                            PLAYER_SIZE)
+            for spr in platforms_sprites:
+                if pygame.sprite.collide_rect(check_sprite, spr):
+                    self.vy = 0
+                    self.canJump = True
+                    self.rect.y = spr.rect.y + TILE_SIZE
+                    break
+            else:
+                self.canJump = False
+                self.vy += self.gravity
 
     def change_gravity(self):
         if not self.canJump:  # если прыжок невозможен
             return
+        if self.goesDown:
+            self.goesDown = False
+        else:
+            self.goesDown = True
+        self.gravity = -self.gravity
+
 
 
 class Platforms(pygame.sprite.Sprite):
@@ -128,6 +164,7 @@ class Platforms(pygame.sprite.Sprite):
     def __init__(self, x, y, plat_len):
         super().__init__(platforms_sprites)
         self.add(platforms_sprites)
+        self.add(all_sprites)
 
         self.image = Platforms.image
         self.rect = self.image.get_rect()  # Размеры
@@ -160,6 +197,7 @@ def main():
         screen.blit(bg, (0, 0))  # Каждую итерацию необходимо всё перерисовывать
         chicken_sprites.draw(screen)  # Отрисовка спрайтов
         platforms_sprites.draw(screen)
+        all_sprites.draw(screen)
         player1.update()
         pygame.display.update()  # обновление и вывод всех изменений на экран
         pygame.time.wait(30)
