@@ -2,7 +2,7 @@ import os
 import sys
 import pygame
 
-# from tanks import tanks_run
+from tanks import tanks_run
 # from toads import toads_run
 from chickens import chickens_run
 
@@ -60,7 +60,7 @@ def a():  # chicken btn func
 
 def b():  # tanks btn func
     print('tanks')
-    # tanks_run()
+    tanks_run()
 
 
 def c():  # toads btn func
