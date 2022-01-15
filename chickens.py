@@ -20,7 +20,8 @@ all_sprites = pygame.sprite.Group()
 platforms_sprites = pygame.sprite.Group()
 chicken_sprites = pygame.sprite.Group()
 
-chicken_pic = 'anime chicken1.png'  # Два варианта есть в принципе в папке data
+chicken_pic1 = 'anime chicken1.png'  # Два варианта есть в принципе в папке data
+chicken_pic2 = 'anime chicken2.png'
 platform_pic = 'block.png'  # Тоже есть несколко вариантов, но этот лучший
 background_pic = ''  # Пока не выбрали
 
@@ -50,7 +51,8 @@ def load_image(name, colorkey=None):  # Обрабатывающая карти�
 
 
 def generate_level(level):
-    new_player, objects, x, y = None, [], None, None
+    new_players, objects, x, y = [], [], None, None
+    player_count = 1
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
@@ -58,9 +60,10 @@ def generate_level(level):
             elif level[y][x] == '-':
                 objects.append(Platforms(x * 16, y * 16, 16))
             elif level[y][x] == '@':  # Игрок в 2 раза больше клеток
-                new_player = Chicken(x * 16, y * 16)
+                new_players.append(Chicken(x * 16, y * 16, player_count))
+                player_count += 1
     # вернем игрока, а также размер поля в клетках
-    return new_player, objects, x, y
+    return new_players, objects, x, y
 
 
 def load_level(filename):
@@ -85,17 +88,25 @@ class Camera:  # камера экрана
 
 
 class Chicken(pygame.sprite.Sprite):  # Класс курицы (игрока)
-    image = load_image(chicken_pic)
-    image = pygame.transform.scale(image, (PLAYER_SIZE, PLAYER_SIZE))
+    image1 = load_image(chicken_pic1)  # Картинка первого игрока
+    image1 = pygame.transform.scale(image1, (PLAYER_SIZE, PLAYER_SIZE))
 
-    def __init__(self, x, y):
+    image2 = load_image(chicken_pic2)  # Второго
+    image2 = pygame.transform.scale(image2, (PLAYER_SIZE, PLAYER_SIZE))
+
+    def __init__(self, x, y, count):
         super().__init__(chicken_sprites)
         self.add(chicken_sprites)
         self.add(all_sprites)
 
-        self.image = Chicken.image
-        self.rect = self.image.get_rect()  # Размеры
-        self.rect.x, self.rect.y = x, y
+        if count == 1:
+            self.image = Chicken.image1
+            self.rect = self.image.get_rect()  # Размеры
+            self.rect.x, self.rect.y = x, y
+        elif count == 2:
+            self.image = Chicken.image2
+            self.rect = self.image.get_rect()  # Размеры
+            self.rect.x, self.rect.y = x, y
 
         self.gravity = GRAVITY
 
@@ -155,7 +166,6 @@ class Chicken(pygame.sprite.Sprite):  # Класс курицы (игрока)
         self.gravity = -self.gravity
 
 
-
 class Platforms(pygame.sprite.Sprite):
     #  Это платформы, по которым прыгают
     image = load_image(platform_pic)
@@ -177,7 +187,8 @@ class Platforms(pygame.sprite.Sprite):
 
 
 camera = Camera(0, 0)
-player1, objects, level_x, level_y = generate_level(load_level('chicken_map'))
+players, objects, level_x, level_y = generate_level(load_level('chicken_map'))
+player1, player2 = players
 
 
 def main():
@@ -191,6 +202,7 @@ def main():
                 if event.key == P2_BUTTON:  # При нажатии на кнопку второго игрока
                     player2.change_gravity()  # То ж самое
         player1.move()
+        player2.move()
         camera.move()
         for obj in objects:
             obj.draw()
@@ -199,6 +211,7 @@ def main():
         platforms_sprites.draw(screen)
         all_sprites.draw(screen)
         player1.update()
+        player2.update()
         pygame.display.update()  # обновление и вывод всех изменений на экран
         pygame.time.wait(30)
 
