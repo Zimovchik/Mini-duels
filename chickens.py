@@ -15,7 +15,7 @@ PLAYER_SIZE = 64  # Размеры игрока
 TILE_SIZE = 16  # Размер клеток платформ (.)
 P1_BUTTON, P2_BUTTON = pygame.K_a, pygame.K_l  # Кнопки, отвечающие за игроков
 SPEED = 2  # Скорость движения всей системы
-GRAVITY = 9
+GRAVITY = 10
 
 all_sprites = pygame.sprite.Group()
 platforms_sprites = pygame.sprite.Group()
@@ -62,7 +62,7 @@ def generate_level(level):
         for x in range(1, len(level[y])):
             if level[y][x] == '-' and level[y][x - 1] != '-':
                 first_platform_x, first_platform_y = x * 16, y * 16
-                counter = 1  # Запоминаем длин платформы пока не кончится
+                counter = 1  # Запоминаем длинy платформы пока не кончится
             elif x + 1 <= len(level[y]) - 1 and level[y][x] == '-' and level[y][x + 1] != '-':
                 counter += 1
                 objects.append(Platforms(first_platform_x, first_platform_y, counter))
@@ -91,26 +91,35 @@ def load_level(filename):
 class Camera:  # камера экрана
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, 800, 600)
+        self.vx = SPEED
 
     def move(self):
-        self.rect[0] += SPEED
+        self.rect[0] += self.vx
 
 
-def where_collide(chick, plat):  # Тестовое пока, нигде не используется
-    y = (chick.posY + chick.rect.h) - plat.rect.y
-    y2 = chick.posY - (plat.rect.y + plat.rect.h)
+def do():
+    pass
+
+
+def check_collision_down(chic, plat):
+    y = (chic.posY + chic.rect.h) - plat.rect.y
+    y2 = chic.posY - (plat.rect.y + plat.rect.h)
     if abs(y) > abs(y2):
         y = y2
     else:
         y = y
-    x = chick.posX + chick.rect.w - plat.rect.x
+    x = chic.posX + chic.rect.w - plat.rect.x
     if abs(y) > abs(x):
-        chick.posX -= x
-        chick.vx = 0
+        chic.posX -= x
+        chic.vx = 0
     else:
-        chick.posY -= y
-        chick.vy = 0
-        chick.gravity = 0
+        chic.posY -= y
+        chic.vy = 0
+        chic.gravity = 0
+
+
+def check_collision_up(chic, plat):
+    pass
 
 
 class Chicken(pygame.sprite.Sprite):  # Класс курицы (игрока)
@@ -143,76 +152,62 @@ class Chicken(pygame.sprite.Sprite):  # Класс курицы (игрока)
         self.posX, self.posY = x, y
         self.canJump = True
         self.isAlive = True
+        self.isOnGround = False
         self.goesDown = True  # Летит ли игрок вниз
-
-    def move(self):
-        self.rect[1] += self.vy
-        '''if pygame.sprite.spritecollideany(self, platforms_sprites) and self.posX + PLAYER_SIZE == Platforms.rect.x:
-            self.vx = 0
-        else:
-            self.vx = SPEED'''
 
     def update(self, time=0):
         # Игрок на самом окне не двигается, двигается мир вокруг него
         if self.goesDown:
-            self.canJump = False
-
-            check_sprite = pygame.sprite.Sprite()  # Спрайт наперед, что проверить пересечение
-            check_sprite.rect = pygame.Rect(self.rect.x, self.rect.y + self.vy + 1, PLAYER_SIZE,
-                                            PLAYER_SIZE)
-            for spr in platforms_sprites:
-                if pygame.sprite.collide_rect(check_sprite, spr):  # если пересечение с платформой
-                    self.vy = 0  # останавливаем (пока только по игрек)
-                    self.canJump = True
-                    self.rect.y = spr.rect.y - PLAYER_SIZE
-                    break
-            else:
-                self.canJump = False
+            if not self.isOnGround:  # если летит
                 self.vy += self.gravity * time / 1000
-        else:  # Все то же самое но если летит вверх
-            self.canJump = False
-            check_sprite = pygame.sprite.Sprite()
-            check_sprite.rect = pygame.Rect(self.rect.x, self.rect.y - self.vy - 1, PLAYER_SIZE,
-                                            PLAYER_SIZE)
-            for spr in platforms_sprites:
-                if pygame.sprite.collide_rect(check_sprite, spr):
-                    self.vy = 0
-                    self.canJump = True
-                    self.rect.y = spr.rect.y + TILE_SIZE
-                    break
-            else:
-                self.canJump = False
-                self.vy += self.gravity * time / 1000
-        if not self.rect.colliderect(screen_rect):
-            self.kill()
-        '''if self.goesDown:
-            check_sprite = pygame.sprite.Sprite()
-            check_sprite.rect = pygame.Rect(self.rect.x, self.rect.y + self.vy + 1, PLAYER_SIZE,
-                                            PLAYER_SIZE)
-            for spr in platforms_sprites:
-                if pygame.sprite.collide_rect(check_sprite, spr):
-                    self.vy = 0
-                    self.canJump = True
-                    self.rect.y = spr.rect.y - PLAYER_SIZE
-                    break
-            else:
-                self.canJump = False
-                self.vy += self.gravity * time / 1000
+            self.isOnGround = False
+            self.rect.y += self.vy
+            self.collide(0, self.vy, platforms_sprites)
         else:
-            check_sprite = pygame.sprite.Sprite()
-            check_sprite.rect = pygame.Rect(self.rect.x, self.rect.y - self.vy - 1, PLAYER_SIZE,
-                                            PLAYER_SIZE)
-            for spr in platforms_sprites:
-                if pygame.sprite.collide_rect(check_sprite, spr):
-                    self.vy = 0
-                    self.canJump = True
-                    self.rect.y = spr.rect.y + TILE_SIZE
-                    break
-            else:
-                self.canJump = False
-                self.vy += self.gravity * time / 1000'''
+            if not self.isOnGround:
+                self.vy += self.gravity * time / 1000
+            self.isOnGround = False
+            self.rect.y += self.vy
+            self.collide(0, self.vy, platforms_sprites)
 
-    def change_gravity(self):
+    def collide(self, vx, vy, platforms):
+        for p in platforms:
+            if pygame.sprite.collide_rect(self, p):  # если есть пересечение платформы с игроком
+                w_collide_d, h_collide_d = self.get_collide_rect_down(p)
+
+                if h_collide_d >= w_collide_d:  # если пересекается справа
+                    self.rect.right = p.rect.left  # то останавливается
+                    self.vx = -SPEED
+                    self.isOnGround = True
+                    self.canJump = True
+                elif vy > 0:  # если падает вниз
+                    self.rect.bottom = p.rect.top  # то не падает вниз
+                    self.canJump = True  # и может прыгать дальше
+                    self.isOnGround = True
+                    self.vy = 0  # и энергия падения пропадает
+                elif vy < 0:  # если движется вверх
+                    self.rect.top = p.rect.bottom  # то не "падает" вверх
+                    self.canJump = True
+                    self.isOnGround = True
+                    self.vy = 0  # и энергия прыжка пропадает
+
+    def get_collide_rect_down(self, plat):
+        w = PLAYER_SIZE - (plat.rect.x - self.rect.x)
+        if self.rect.y <= plat.rect.y:
+            h = TILE_SIZE
+        else:
+            h = TILE_SIZE - (plat.rect.y - self.rect.y)
+        return w, h
+
+    def get_collide_rect_up(self, plat):
+        w = PLAYER_SIZE - (plat.rect.x - self.rect.x)
+        if self.rect.y + PLAYER_SIZE >= plat.rect.y + TILE_SIZE:
+            h = TILE_SIZE
+        else:
+            h = TILE_SIZE - (plat.rect.y - self.rect.y)
+        return w, h
+
+    def change_gravity(self, time=0):
         if not self.canJump:  # если прыжок невозможен
             return
         if self.goesDown:
@@ -221,6 +216,7 @@ class Chicken(pygame.sprite.Sprite):  # Класс курицы (игрока)
             self.goesDown = True
         self.image = pygame.transform.flip(self.image, False, True)  # картинку вверх тормашками
         self.gravity = -self.gravity
+        self.canJump = False
 
     def get_pos(self):
         return self.posX, self.posY
@@ -262,11 +258,12 @@ class Platforms(pygame.sprite.Sprite):
         os.remove(name)
         self.rect = self.image.get_rect()  # Размеры
         self.rect.x, self.rect.y = x, y
+        self.vx = -SPEED
 
     def draw(self):
         #  Чтобы отрисовка соответствовала позиции камеры его нужно отрисовывать
         #  на self.rect[0]-camera.rect[0], self.rect[1]-camera.rect[1]
-        self.rect[0] -= SPEED
+        self.rect[0] += self.vx
 
 
 screen_rect = (0, 0, WIDTH, HEIGHT)
@@ -285,11 +282,10 @@ def main():
                 quit()
             if event.type == pygame.KEYDOWN:
                 if event.key == P1_BUTTON:  # При нажатии на кнопку первого игрока
-                    player1.change_gravity()  # Пытаемся менять гравитацию если это возможно
+                    player1.change_gravity(
+                        time_passed)  # Пытаемся менять гравитацию если это возможно
                 if event.key == P2_BUTTON:  # При нажатии на кнопку второго игрока
-                    player2.change_gravity()  # То ж самое
-        player1.move()
-        player2.move()
+                    player2.change_gravity(time_passed)  # То ж самое
         camera.move()
         for obj in objects:
             obj.draw()
