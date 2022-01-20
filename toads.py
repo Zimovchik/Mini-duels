@@ -1,19 +1,20 @@
 import pygame
 import os
 import sys
+import random
 
-WIDTH, HEIGHT = 800, 600
-GRAVITY = 700
-PLAYERONEKEY = pygame.K_SPACE
-PLAYERTWOKEY = pygame.K_UP
-SPEED = 100
-LEVEL_WIDTH = 1200
-PLAYER_SIZE = 64
-K = 0.5
-FPS = 120
+WIDTH, HEIGHT = 800, 600  # размеры экрана
+GRAVITY = 1000  # гравитация
+PLAYERONEKEY = pygame.K_a  # клавиши игроков
+PLAYERTWOKEY = pygame.K_l
+SPEED = 100  # скорость
+JUMP_POWER = -300  # сила прыжка
+LEVEL_WIDTH = 5000  # длина уровня
+PLAYER_SIZE = 64  # размер игрока
+K = 0.5  # коэффициент движения фона
 
 
-def load_image(name, colorkey=None):
+def load_image(name, colorkey=None):  # загрузка изображения
     fullname = os.path.join('data', name)
     if not os.path.isfile(fullname):
         print(f"Файл с изображением '{fullname}' не найден")
@@ -27,14 +28,14 @@ def load_image(name, colorkey=None):
     return image
 
 
-def load_map(filename):
+def load_map(filename):  # загрузка уровня из файла
     filename = 'data/maps/' + filename
     with open(filename, 'r') as mapFile:
         mapSettings, mapFile = tuple([line.strip() for line in mapFile])
         level_map = [line.strip().split('.') for line in mapFile.split(';')]
     for i in level_map[:-1]:
         print(i)
-        if len(i):
+        if len(i):  # создание объектов
             if i[0] == 'p':
                 Platform(int(i[1]), int(i[2]), int(i[3]), int(i[4]))
             elif i[0] == 'd':
@@ -42,7 +43,15 @@ def load_map(filename):
             else:
                 print('unknohwn')
     global LEVEL_WIDTH, SPEEhD, GRAVITY, PLAYER_SIZE
-    LEVEL_WIDTH, SPEED, GRAVITY, PLAYER_SIZE = tuple(map(lambda x: int(x), mapSettings.split(', ')))
+    LEVEL_WIDTH, SPEED, GRAVITY, PLAYER_SIZE = tuple(
+        map(lambda x: int(x), mapSettings.split(', ')))  # изменение настроек
+
+
+def generate_map():  # создание уровня случайного
+    for i in range(400, LEVEL_WIDTH, 250):
+        j = random.randrange(HEIGHT // 3, HEIGHT - HEIGHT // 3)
+        Death(i, 0, 50, j - PLAYER_SIZE // 2 * (5 - i // 750))
+        Death(i, j + PLAYER_SIZE // 2 * (5 - i // 750), 50, HEIGHT - j - PLAYER_SIZE // 2 * (5 - i // 750))
 
 
 def win(screen_out, player):
@@ -61,7 +70,7 @@ def tie(screen_out):
     screen_out.blit(text, (text_x, text_y))
 
 
-def check_collision(first, second):
+def check_collision(first, second):  # проверка на столкновение у платформ и игрока
     y = (first.pos_y + first.rect.h) - second.rect.y
     y2 = first.pos_y - (second.rect.y + second.rect.h)
     if abs(y) > abs(y2):
@@ -76,10 +85,9 @@ def check_collision(first, second):
         first.pos_y -= y
         first.vy = 0
         first.gravity = 0
-        first.cur_frame = (first.cur_frame + 1) % len(first.frames)
 
 
-class Player(pygame.sprite.Sprite):
+class Player(pygame.sprite.Sprite):  # класс игрока
     def __init__(self, color, player_number):
         super().__init__(char)
         self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE), pygame.SRCALPHA, 32)
@@ -112,7 +120,9 @@ class Player(pygame.sprite.Sprite):
             self.vx = SPEED
         if self.rect.x + self.rect.w >= WIDTH:
             self.vx = 0
-        if self.rect.x + self.rect.w < 0 or pygame.sprite.spritecollideany(self, death) or self.rect.y >= HEIGHT:
+        if self.rect.x + self.rect.w < 0 or \
+                pygame.sprite.spritecollideany(self, death) or self.rect.y >= HEIGHT or self.rect.y + self.rect.h < 0:
+            # проверка на смерть
             self.kill()
             self.is_alive = False
         self.image = self.frames[self.cur_frame]
@@ -127,12 +137,18 @@ class Player(pygame.sprite.Sprite):
                 self.frames.append(sheet.subsurface(pygame.Rect(
                     frame_location, self.rect.size)))
 
-    def jump(self):
-        self.vy = -350
+    def jump(self):  # прыжок
+        self.vy = JUMP_POWER
         self.update()
 
+    def get_number(self):
+        return self.number
 
-class Platform(pygame.sprite.Sprite):
+    def get_color(self):
+        return self.color
+
+
+class Platform(pygame.sprite.Sprite):  # класс платформы
     def __init__(self, x, y, w, h):
         super().__init__(platforms, all_sprites)
         self.image = pygame.Surface((w, h), pygame.SRCALPHA, 32)
@@ -144,9 +160,10 @@ class Platform(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = self.pos_x, self.pos_y
 
 
-class Death(pygame.sprite.Sprite):
+class Death(pygame.sprite.Sprite):  # класс платформы, которая убивает
     def __init__(self, x, y, w, h):
         super().__init__(death, all_sprites)
+        print(w, h)
         self.image = pygame.Surface((w, h), pygame.SRCALPHA, 32)
         pygame.draw.rect(self.image, pygame.Color("white"), (0, 0, w, h), 0)
         self.pos_x, self.pos_y = x, y
@@ -156,12 +173,12 @@ class Death(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = self.pos_x, self.pos_y
 
 
-class Camera:
+class Camera:  # класс камеры
     def __init__(self):
         self.dx = 0
-        self.length_left = LEVEL_WIDTH - WIDTH // 2
+        self.length_left = LEVEL_WIDTH - WIDTH // 2  # длина пути камеры
 
-    def update(self, ticks):
+    def update(self, ticks):  # вычисление сдвига
         if int(self.length_left) <= 0:
             self.dx = 0
         elif int(self.length_left) >= LEVEL_WIDTH - WIDTH:
@@ -171,12 +188,12 @@ class Camera:
             self.dx = -SPEED * ticks / 1000
             self.length_left += self.dx
 
-    def apply(self, obj):
+    def apply(self, obj):  # сдвиг объекта
         obj.pos_x += self.dx
         obj.update()
 
 
-class Background(pygame.sprite.Sprite):
+class Background(pygame.sprite.Sprite):  # класс фона
     def __init__(self):
         super().__init__(background, all_sprites)
         self.image_1 = load_image('sky.png')
@@ -189,7 +206,7 @@ class Background(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.pos_x, self.pos_y = 0, 0
 
-    def update(self):
+    def update(self):  # движение фона
         self.rect.x = int(self.pos_x * K)
         self.rect.y = self.pos_y
 
@@ -204,13 +221,13 @@ running = True
 
 all_sprites = pygame.sprite.Group()
 platforms = pygame.sprite.Group()
-walls = pygame.sprite.Group()
 death = pygame.sprite.Group()
 char = pygame.sprite.Group()
 background = pygame.sprite.Group()
 
 back = Background()
-load_map('toadmap.txt')
+# load_map('toadmap.txt')
+generate_map()
 players = []
 player1 = Player('blue', 1)
 players.append(player1)
@@ -218,7 +235,7 @@ player2 = Player('red', 2)
 players.append(player2)
 camera = Camera()
 
-while running:
+while running:  # игровой цикл
     players = list(filter(lambda g: g.rect.x + g.rect.w > 0, players))
     players = list(filter(lambda g: g.is_alive, players))
     if len(players) > 1:
