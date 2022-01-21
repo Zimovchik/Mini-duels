@@ -16,11 +16,13 @@ GRAVITY = 10
 all_sprites = pygame.sprite.Group()  # Группы спрайтов
 platforms_sprites = pygame.sprite.Group()
 chicken_sprites = pygame.sprite.Group()
+finish_sprites = pygame.sprite.Group()
 
 chicken_pic1 = 'anime chicken1.png'  # Два варианта есть в принципе в папке data
 chicken_pic2 = 'anime chicken2.png'
 platform_pic = 'block.png'  # Тоже есть несколко вариантов, но этот лучший
 background_pic = ''
+finish_image = 'finish.png'
 
 pygame.init()
 screen = pygame.display.set_mode(DISPLAY)  # Создаем окошко
@@ -48,7 +50,7 @@ def chickens_run():
         return image
 
     def generate_level(level):
-        new_players, objects, x, y = [], [], None, None
+        new_players, objects, x, y, finish = [], [], None, None, []
         player_count = 1
 
         counter = 0
@@ -67,8 +69,11 @@ def chickens_run():
                 elif level[y][x] == '@':  # Игрок в 2 раза больше клеток
                     new_players.append(Chicken(x * 16, y * 16, player_count))
                     player_count += 1
+                elif level[y][x] == '=':
+                    finish.append(Finish(x * 16, y * 16))
+
         # вернем игрока, а также размер поля в клетках
-        return new_players, objects, x, y
+        return new_players, objects, x, y, finish
 
     def load_level(filename):
         filename = "data/maps/" + filename
@@ -166,6 +171,8 @@ def chickens_run():
                 self.kill()
                 self.isAlive = False # игрок умирает а все в игре останавливается
                 camera.vx = 0
+                for fin in finishes:
+                    fin.vx = 0
                 self.stop_another_player(self.player_number)
                 for plat in platforms_sprites:
                     plat.vx = 0
@@ -257,9 +264,41 @@ def chickens_run():
         def draw(self):
             self.rect[0] += self.vx
 
+    class Finish(pygame.sprite.Sprite):
+        # финиш, игра заканчивается
+        image = load_image(finish_image)
+
+        def __init__(self, x, y):
+            super().__init__(finish_sprites)
+            self.add(all_sprites)
+            self.add(finish_sprites)
+
+            self.image = Finish.image
+            self.image = pygame.transform.scale(self.image, (PLAYER_SIZE, PLAYER_SIZE))
+            self.rect = self.image.get_rect()
+            self.rect.x, self.rect.y = x, y
+            self.vx = -SPEED
+
+        def draw(self):
+            self.rect[0] += self.vx
+
+        def check_ending(self):
+            if pygame.sprite.spritecollideany(self, chicken_sprites):
+                w_player = pygame.sprite.spritecollideany(self, chicken_sprites)
+                if w_player.rect.x >= self.rect.x:
+                    w_player.stop_another_player(w_player.player_number)
+                    for plat in platforms_sprites:
+                        plat.vx = 0
+                    camera.vx = 0
+                    for fin in finishes:
+                        fin.vx = 0
+                    endgame(w_player.player_number)  # финальный экран подведения итогов
+
+
+
     screen_rect = (0, 0, WIDTH, HEIGHT)
     camera = Camera(0, 0)
-    players, objects, level_x, level_y = generate_level(load_level('chicken_map'))
+    players, objects, level_x, level_y, finishes = generate_level(load_level('chicken_map'))
     player1, player2 = players
     print(len(objects))
 
@@ -279,10 +318,15 @@ def chickens_run():
             camera.move()
             for obj in objects:
                 obj.draw()
+
             screen.blit(bg, (0, 0))  # Каждую итерацию необходимо всё перерисовывать
             all_sprites.draw(screen)
             player1.update(time_passed)
             player2.update(time_passed)
+            for fin in finishes:
+                fin.draw()
+                fin.check_ending()
+
             chicken_sprites.draw(screen)  # Отрисовка спрайтов
             platforms_sprites.draw(screen)
             pygame.display.update()  # обновление и вывод всех изменений на экран
