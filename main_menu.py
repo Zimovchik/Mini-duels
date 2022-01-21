@@ -3,8 +3,7 @@ import sys
 import pygame
 
 from tanks import tanks_run
-
-# from toads import toads_run
+from toads import toads_run
 # from chickens import chickens_run
 
 pygame.init()
@@ -66,7 +65,7 @@ def b():  # tanks btn func
 
 def c():  # toads btn func
     print("toads")
-    # toads_run()
+    toads_run()
 
 
 # initializing games' buttons

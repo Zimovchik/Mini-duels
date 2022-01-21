@@ -8,10 +8,20 @@ GRAVITY = 1000  # гравитация
 PLAYERONEKEY = pygame.K_a  # клавиши игроков
 PLAYERTWOKEY = pygame.K_l
 SPEED = 100  # скорость
-JUMP_POWER = -300  # сила прыжка
+JUMP_POWER = 300  # сила прыжка
 LEVEL_WIDTH = 5000  # длина уровня
 PLAYER_SIZE = 64  # размер игрока
+GRAVITY_DIRECTION = 1  # направление гравитации
 K = 0.5  # коэффициент движения фона
+
+all_sprites = pygame.sprite.Group()
+platforms = pygame.sprite.Group()
+death = pygame.sprite.Group()
+char = pygame.sprite.Group()
+background = pygame.sprite.Group()
+inversions = pygame.sprite.Group()
+
+running = True
 
 
 def load_image(name, colorkey=None):  # загрузка изображения
@@ -42,7 +52,7 @@ def load_map(filename):  # загрузка уровня из файла
                 Death(int(i[1]), int(i[2]), int(i[3]), int(i[4]))
             else:
                 print('unknohwn')
-    global LEVEL_WIDTH, SPEEhD, GRAVITY, PLAYER_SIZE
+    global LEVEL_WIDTH, SPEED, GRAVITY, PLAYER_SIZE
     LEVEL_WIDTH, SPEED, GRAVITY, PLAYER_SIZE = tuple(
         map(lambda x: int(x), mapSettings.split(', ')))  # изменение настроек
 
@@ -50,16 +60,20 @@ def load_map(filename):  # загрузка уровня из файла
 def generate_map():  # создание уровня случайного
     for i in range(400, LEVEL_WIDTH, 250):
         j = random.randrange(HEIGHT // 3, HEIGHT - HEIGHT // 3)
+        if random.randint(0, 1):
+            Inversion(i + 20, 0, 10, HEIGHT)
         Death(i, 0, 50, j - PLAYER_SIZE // 2 * (5 - i // 750))
         Death(i, j + PLAYER_SIZE // 2 * (5 - i // 750), 50, HEIGHT - j - PLAYER_SIZE // 2 * (5 - i // 750))
 
 
 def win(screen_out, player):
     font = pygame.font.SysFont('arial', 50)
-    text = font.render(f'player {player.number} won', True, player.color)
+    text = font.render(f'player {player.get_number()} won', True, player.get_color())
     text_x = WIDTH // 2 - text.get_width() // 2
     text_y = HEIGHT // 2 - text.get_height() // 2
     screen_out.blit(text, (text_x, text_y))
+    pygame.display.flip()
+    ending()
 
 
 def tie(screen_out):
@@ -68,6 +82,16 @@ def tie(screen_out):
     text_x = WIDTH // 2 - text.get_width() // 2
     text_y = HEIGHT // 2 - text.get_height() // 2
     screen_out.blit(text, (text_x, text_y))
+    pygame.display.flip()
+    ending()
+
+
+def ending():
+    global running
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                running = False
 
 
 def check_collision(first, second):  # проверка на столкновение у платформ и игрока
@@ -90,20 +114,24 @@ def check_collision(first, second):  # проверка на столкнове�
 class Player(pygame.sprite.Sprite):  # класс игрока
     def __init__(self, color, player_number):
         super().__init__(char)
-        self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE), pygame.SRCALPHA, 32)
-        pygame.draw.rect(self.image, pygame.Color(color), (0, 0, PLAYER_SIZE, PLAYER_SIZE), 0)
-        self.rect = self.image.get_rect()
-        self.rect.x = self.pos_x = 0
-        self.rect.y = self.pos_y = HEIGHT // 3 - self.rect.h // 2
-        self.vx, self.vy = SPEED, 0
-        self.gravity = GRAVITY
-        self.is_alive = True
-        self.color = pygame.Color(color)
-        self.number = player_number
+
         self.frames = []
         self.cut_sheet(load_image('frog.png'), 8, 1)
         self.cur_frame = 0
         self.image = self.frames[self.cur_frame]
+
+        self.rect = self.image.get_rect()
+        self.rect.x = self.pos_x = 0
+        self.rect.y = self.pos_y = HEIGHT // 3 - self.rect.h // 2
+
+        self.vx, self.vy = SPEED, 0
+        self.gravity_direction = GRAVITY_DIRECTION
+        self.gravity = GRAVITY * self.gravity_direction
+
+        self.is_alive = True
+        self.color = pygame.Color(color)
+        self.number = player_number
+        self.does_collide = 0
 
     def update(self, ticks=0):
         if ticks:
@@ -112,20 +140,36 @@ class Player(pygame.sprite.Sprite):  # класс игрока
             self.pos_y += self.vy * ticks / 1000
         self.rect.x = self.pos_x
         self.rect.y = self.pos_y
+        self.check_cur_frame()
         if pygame.sprite.spritecollideany(self, platforms):
             for shprite in pygame.sprite.spritecollide(self, platforms, False):
                 check_collision(self, shprite)
         else:
-            self.gravity = GRAVITY
+            self.gravity = GRAVITY * self.gravity_direction
+            self.vx = SPEED
+        if pygame.sprite.spritecollideany(self, inversions):
+            if self.does_collide:
+                pass
+            else:
+                self.gravity_direction *= -1
+                self.does_collide = 1
+                print('GRAVITY_DIRECTION:1', self.gravity_direction)
+                self.image = pygame.transform.flip(self.image, False, True)
+                print('image')
+        else:
+            self.does_collide = 0
+            self.gravity = GRAVITY * self.gravity_direction
             self.vx = SPEED
         if self.rect.x + self.rect.w >= WIDTH:
             self.vx = 0
         if self.rect.x + self.rect.w < 0 or \
-                pygame.sprite.spritecollideany(self, death) or self.rect.y >= HEIGHT or self.rect.y + self.rect.h < 0:
+                pygame.sprite.spritecollideany(self,
+                                               death) or self.rect.y >= HEIGHT or self.rect.y + self.rect.h < 0:
             # проверка на смерть
-            self.kill()
             self.is_alive = False
-        self.image = self.frames[self.cur_frame]
+
+    def check_cur_frame(self):
+        pass
 
     def cut_sheet(self, sheet, columns, rows):
         sheet = pygame.transform.scale(sheet, (PLAYER_SIZE * columns, PLAYER_SIZE * rows))
@@ -138,8 +182,7 @@ class Player(pygame.sprite.Sprite):  # класс игрока
                     frame_location, self.rect.size)))
 
     def jump(self):  # прыжок
-        self.vy = JUMP_POWER
-        self.update()
+        self.vy = JUMP_POWER * -self.gravity_direction
 
     def get_number(self):
         return self.number
@@ -171,6 +214,21 @@ class Death(pygame.sprite.Sprite):  # класс платформы, котор�
 
     def update(self):
         self.rect.x, self.rect.y = self.pos_x, self.pos_y
+
+
+class Inversion(pygame.sprite.Sprite):  # класс смена гравитации
+    def __init__(self, x, y, w, h):
+        super().__init__(inversions, all_sprites)
+        self.image = pygame.Surface((w, h), pygame.SRCALPHA, 32)
+        pygame.draw.rect(self.image, pygame.Color("purple"), (0, 0, w, h), 0)
+        self.pos_x, self.pos_y = x, y
+        self.rect = pygame.Rect(self.pos_x, self.pos_y, w, h)
+
+    def update(self):
+        self.rect.x, self.rect.y = self.pos_x, self.pos_y
+
+    def get_cords(self):
+        return self.rect.x, self.rect.y
 
 
 class Camera:  # класс камеры
@@ -211,38 +269,28 @@ class Background(pygame.sprite.Sprite):  # класс фона
         self.rect.y = self.pos_y
 
 
-pygame.init()
-pygame.font.init()
-pygame.display.set_caption('Toads')
-size = WIDTH, HEIGHT
-screen = pygame.display.set_mode(size)
-clock = pygame.time.Clock()
-running = True
+def toads_run():
+    pygame.init()
+    pygame.font.init()
+    pygame.display.set_caption('Toads')
+    size = WIDTH, HEIGHT
+    screen = pygame.display.set_mode(size)
+    clock = pygame.time.Clock()
+    global running
 
-all_sprites = pygame.sprite.Group()
-platforms = pygame.sprite.Group()
-death = pygame.sprite.Group()
-char = pygame.sprite.Group()
-background = pygame.sprite.Group()
+    Background()
+    # load_map('toadmap.txt')
+    generate_map()
+    player1 = Player('blue', 1)
+    player2 = Player('red', 2)
+    players = [player1, player2]
+    camera = Camera()
 
-back = Background()
-# load_map('toadmap.txt')
-generate_map()
-players = []
-player1 = Player('blue', 1)
-players.append(player1)
-player2 = Player('red', 2)
-players.append(player2)
-camera = Camera()
-
-while running:  # игровой цикл
-    players = list(filter(lambda g: g.rect.x + g.rect.w > 0, players))
-    players = list(filter(lambda g: g.is_alive, players))
-    if len(players) > 1:
+    while running:  # игровой цикл
         screen.fill((pygame.Color('black')))
         background.draw(screen)
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == PLAYERONEKEY:
@@ -251,6 +299,7 @@ while running:  # игровой цикл
                     player2.jump()
         tick_passed = clock.tick()
         char.update(tick_passed)
+
         camera.update(tick_passed)
         for sprite in all_sprites:
             camera.apply(sprite)
@@ -258,14 +307,11 @@ while running:  # игровой цикл
             camera.apply(sprite)
         all_sprites.draw(screen)
         char.draw(screen)
-    elif len(players):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-        win(screen, players[0])
-    else:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-        tie(screen)
-    pygame.display.flip()
+        if len(list(filter(lambda g: g.is_alive, players))) == 1:
+            win(screen, list(filter(lambda g: g.is_alive, players))[0])
+        elif len(list(filter(lambda g: g.is_alive, players))) == 0:
+            tie(screen)
+        pygame.display.flip()
+
+
+toads_run()
