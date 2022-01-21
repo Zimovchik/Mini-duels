@@ -17,12 +17,15 @@ all_sprites = pygame.sprite.Group()  # Группы спрайтов
 platforms_sprites = pygame.sprite.Group()
 chicken_sprites = pygame.sprite.Group()
 finish_sprites = pygame.sprite.Group()
+portal_sprites = pygame.sprite.Group()
 
 chicken_pic1 = 'anime chicken1.png'  # Два варианта есть в принципе в папке data
 chicken_pic2 = 'anime chicken2.png'
 platform_pic = 'block.png'  # Тоже есть несколко вариантов, но этот лучший
 background_pic = ''
 finish_image = 'finish.png'
+portal_pic1 = 'portal1.png'
+portal_pic2 = 'portal2.png'
 
 pygame.init()
 screen = pygame.display.set_mode(DISPLAY)  # Создаем окошко
@@ -50,7 +53,7 @@ def chickens_run():
         return image
 
     def generate_level(level):
-        new_players, objects, x, y, finish = [], [], None, None, []
+        new_players, objects, x, y, finish, portals = [], [], None, None, [], []
         player_count = 1
 
         counter = 0
@@ -71,9 +74,11 @@ def chickens_run():
                     player_count += 1
                 elif level[y][x] == '=':
                     finish.append(Finish(x * 16, y * 16))
+                elif level[y][x] == '+':
+                    portals.append(Portal(x*16, y*16, player_count))
 
         # вернем игрока, а также размер поля в клетках
-        return new_players, objects, x, y, finish
+        return new_players, objects, x, y, finish, portals
 
     def load_level(filename):
         filename = "data/maps/" + filename
@@ -176,6 +181,8 @@ def chickens_run():
                 self.stop_another_player(self.player_number)
                 for plat in platforms_sprites:
                     plat.vx = 0
+                for por in portals:
+                    por.vx = 0
                 endgame(self.player_number)  # финальный экран подведения итогов
 
         def get_collide_rect_down(self, plat):
@@ -292,13 +299,37 @@ def chickens_run():
                     camera.vx = 0
                     for fin in finishes:
                         fin.vx = 0
+                    for por in portals:
+                        por.vx = 0
                     endgame(w_player.player_number)  # финальный экран подведения итогов
 
+    class Portal(pygame.sprite.Sprite):
+        # начало игры, откуда выходят курицы
+
+        image1 = load_image(portal_pic1)
+        image2 = load_image(portal_pic2)
+
+        def __init__(self, x, y, num):
+            super().__init__(portal_sprites)
+            self.add(portal_sprites)
+
+            if num == 1:
+                self.image = Portal.image1
+            elif num == 2:
+                self.image = Portal.image2
+            self.image = pygame.transform.scale(self.image, (PLAYER_SIZE, PLAYER_SIZE))
+            self.image = pygame.transform.flip(self.image, True, False)
+            self.rect = self.image.get_rect()
+            self.rect.x, self.rect.y = x, y
+            self.vx = -SPEED
+
+        def draw(self):
+            self.rect[0] += self.vx
 
 
     screen_rect = (0, 0, WIDTH, HEIGHT)
     camera = Camera(0, 0)
-    players, objects, level_x, level_y, finishes = generate_level(load_level('chicken_map'))
+    players, objects, level_x, level_y, finishes, portals = generate_level(load_level('chicken_map'))
     player1, player2 = players
     print(len(objects))
 
@@ -326,7 +357,10 @@ def chickens_run():
             for fin in finishes:
                 fin.draw()
                 fin.check_ending()
+            for por in portals:
+                por.draw()
 
+            portal_sprites.draw(screen)
             chicken_sprites.draw(screen)  # Отрисовка спрайтов
             platforms_sprites.draw(screen)
             pygame.display.update()  # обновление и вывод всех изменений на экран
