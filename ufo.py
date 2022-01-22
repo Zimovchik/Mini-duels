@@ -14,7 +14,7 @@ horizontal_borders = pygame.sprite.Group()
 players = pygame.sprite.Group()
 BALL_RADIUS = 10
 BULLET_SPEED = 0.5
-spawns = [(50, 32), (750, 568)]
+spawns = [(50, 32), (700, 400)]
 
 
 def load_image(name, colorkey=None):
@@ -50,15 +50,17 @@ class Player(pygame.sprite.Sprite):
         self.vx = 0
         self.vy = SPEED
         self.speed_direction = speed_direction
+        self.wall_colliding = False
 
     def change_direction(self):
         self.speed_direction = -self.speed_direction
         self.vy = self.speed_direction * SPEED
 
     def update(self):
-        if pygame.sprite.spritecollideany(self, vertical_borders):
+        if pygame.sprite.spritecollideany(self, horizontal_borders):
             self.wall_collision()
-            sprite = pygame.sprite.spritecollideany(self, vertical_borders)
+        elif pygame.sprite.spritecollideany(self, balls):
+            sprite = pygame.sprite.spritecollideany(self, balls)
             sprite.ufo_collision(self.speed_direction)
         self.pos = self.pos[0] + self.vx, self.pos[1] + self.vy
         self.rect.x = int(self.pos[0])
@@ -67,9 +69,9 @@ class Player(pygame.sprite.Sprite):
     def wall_collision(self):
         self.vy = 0
         if self.speed_direction == 1:
-            self.rect.bottom = 600
+            self.rect.bottom = 570
         else:
-            self.rect.top = 0
+            self.rect.top = 30
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -105,18 +107,29 @@ p2 = Player(1, -1)
 
 def ufo_run():
     pygame.init()
-    pygame.display.set_mode("UFO")
+    pygame.display.set_caption('UFO')
     size = WIDTH, HEIGHT
     screen = pygame.display.set_mode(size)
+    clock = pygame.time.Clock()
     Border(5, 5, WIDTH - 5, 5)
     Border(5, HEIGHT - 5, WIDTH - 5, HEIGHT - 5)
     Border(5, 5, 5, HEIGHT - 5)
     Border(WIDTH - 5, 5, WIDTH - 5, HEIGHT - 5)
     running = True
-    while True:
+    while running:
+        screen.fill((0, 0, 0))
         for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == PLAYERONEKEY:
                     p1.change_direction()
                 elif event.key == PLAYERTWOKEY:
                     p2.change_direction()
+        all_sprites.update()
+        players.update()
+        all_sprites.draw(screen)
+        pygame.display.flip()
+
+
+ufo_run()
