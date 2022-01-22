@@ -1,12 +1,13 @@
 from random import randint
-
-from constants import *
+import pygame
 
 pygame.init()
 font1 = pygame.font.SysFont('arial', 100)
 font2 = pygame.font.SysFont('arial', 25)
 font3 = pygame.font.SysFont('arial', 35)
 screen = pygame.display.set_mode((800, 600))
+PLAYERONEKEY = pygame.K_a
+PLAYERTWOKEY = pygame.K_l
 kol1 = 0
 kol2 = 0
 raund = 1
