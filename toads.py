@@ -50,7 +50,6 @@ def load_map(filename):  # загрузка уровня из файла
         mapSettings, mapFile = tuple([line.strip() for line in mapFile])
         level_map = [line.strip().split('.') for line in mapFile.split(';')]
     for i in level_map[:-1]:
-        print(i)
         if len(i):  # создание объектов
             if i[0] == 'p':
                 Platform(int(i[1]), int(i[2]), int(i[3]), int(i[4]))
@@ -222,7 +221,6 @@ class Platform(pygame.sprite.Sprite):  # класс платформы
 class Death(pygame.sprite.Sprite):  # класс платформы, которая убивает
     def __init__(self, x, y, w, h, flipped=False):
         super().__init__(death, all_sprites)
-        print('wh', w, h)
         self.image = pygame.Surface((w, h), pygame.SRCALPHA, 32)
         self.rect = pygame.rect.Rect(x, y, w, h)
         image = load_image('death_platform.png').subsurface(pygame.rect.Rect(0, 0, w, h))
@@ -285,7 +283,6 @@ class Background(pygame.sprite.Sprite):  # класс фона
         self.width = self.image_1.get_rect().w * j
         self.image = pygame.Surface((self.width, HEIGHT), pygame.SRCALPHA, 32)
         for i in range(j):
-            print(i)
             self.image.blit(self.image_1, (self.image_1.get_rect().w * i, 0))
         self.rect = self.image.get_rect()
         self.pos_x, self.pos_y = 0, 0
