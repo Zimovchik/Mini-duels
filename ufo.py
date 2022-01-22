@@ -43,7 +43,7 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, p_number, speed_direction):
         super().__init__(players, all_sprites)
         self.pos = spawns[p_number]
-        self.image = load_image(f"ufo player{p_number + 1}.png")
+        self.image = pygame.transform.flip(load_image(f"ufo player{p_number + 1}.png"), not p_number, False)
         self.rect = self.image.get_rect()
         self.rect.x = self.pos[0]
         self.rect.y = self.pos[1]
@@ -58,7 +58,7 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         if pygame.sprite.spritecollideany(self, horizontal_borders):
-            self.wall_collision()
+            self.wall_collision(pygame.sprite.spritecollide(self, horizontal_borders, False)[0])
         elif pygame.sprite.spritecollideany(self, balls):
             sprite = pygame.sprite.spritecollideany(self, balls)
             sprite.ufo_collision(self.speed_direction)
@@ -66,12 +66,12 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = int(self.pos[0])
         self.rect.y = int(self.pos[1])
 
-    def wall_collision(self):
+    def wall_collision(self, other):
         self.vy = 0
         if self.speed_direction == 1:
-            self.rect.bottom = 570
+            self.pos = self.pos[0], other.rect.top - self.rect.h
         else:
-            self.rect.top = 30
+            self.pos = self.pos[0], other.rect.bottom
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -102,7 +102,7 @@ class Bullet(pygame.sprite.Sprite):
 
 
 p1 = Player(0, 1)
-p2 = Player(1, -1)
+p2 = Player(1, 1)
 
 
 def ufo_run():
