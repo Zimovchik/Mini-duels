@@ -4,6 +4,7 @@ import pygame
 
 from tanks import tanks_run
 from toads import toads_run
+from ufo import ufo_run
 
 # from chickens import chickens_run
 
@@ -15,7 +16,7 @@ screen = pygame.display.set_mode(size)
 all_sprites = pygame.sprite.Group()
 games = pygame.sprite.Group()
 setting_btns = pygame.sprite.Group()
-pygame.display.set_caption('Main window')
+pygame.display.set_caption('Menu')
 # window control vars
 running = True
 setting_open = False
@@ -57,16 +58,25 @@ class Button(pygame.sprite.Sprite):
 def a():  # chicken btn func
     print('chichken')
     # chickens_run()
+    pygame.display.set_caption("Menu")
 
 
 def b():  # tanks btn func
     print('tanks')
     tanks_run()
+    pygame.display.set_caption("Menu")
 
 
 def c():  # toads btn func
     print("toads")
     toads_run(pygame.K_a, pygame.K_l)
+    pygame.display.set_caption("Menu")
+
+
+def d():
+    print('ufos')
+    ufo_run()
+    pygame.display.set_caption("Menu")
 
 
 # initializing games' buttons
@@ -77,9 +87,12 @@ tanks = Button(games, all_sprites, pygame.transform.scale(load_image("tanks.png"
 tanks.press = b
 toads = Button(games, all_sprites, pygame.transform.scale(load_image("toads.png"), (150, 150)))
 toads.press = c
+ufo = Button(games, all_sprites, pygame.transform.scale(load_image("ufos.png"), (150, 150)))
+ufo.press = d
 chicken.rect = chicken.rect.move(100, 100)
 tanks.rect = tanks.rect.move(300, 100)
 toads.rect = toads.rect.move(500, 100)
+ufo.rect = ufo.rect.move(100, 300)
 
 # initializing settings
 

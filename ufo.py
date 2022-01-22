@@ -138,4 +138,3 @@ def ufo_run():
         pygame.display.flip()
 
 
-ufo_run()
