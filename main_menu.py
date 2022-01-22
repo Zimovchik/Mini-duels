@@ -5,8 +5,9 @@ import pygame
 from tanks import tanks_run
 from toads import toads_run
 from ufo import ufo_run
+from chickens import chickens_run
 
-# from chickens import chickens_run
+# from race import race_run
 
 pygame.init()
 size = width, height = 800, 600
@@ -57,7 +58,7 @@ class Button(pygame.sprite.Sprite):
 # This funcs are creating only to paste them into button classes, so they are with no any specific title
 def a():  # chicken btn func
     print('chichken')
-    # chickens_run()
+    chickens_run()
     pygame.display.set_caption("Menu")
 
 
@@ -79,6 +80,12 @@ def d():
     pygame.display.set_caption("Menu")
 
 
+def e():
+    print("race")
+    # race_run()
+    pygame.display.set_caption("Menu")
+
+
 # initializing games' buttons
 
 chicken = Button(games, all_sprites, pygame.transform.scale(load_image("chickens.png"), (150, 150)))
@@ -89,10 +96,12 @@ toads = Button(games, all_sprites, pygame.transform.scale(load_image("toads.png"
 toads.press = c
 ufo = Button(games, all_sprites, pygame.transform.scale(load_image("ufos.png"), (150, 150)))
 ufo.press = d
+race = Button(games, all_sprites, pygame.transform.scale(load_image("race.png"), (150, 150)))
 chicken.rect = chicken.rect.move(100, 100)
 tanks.rect = tanks.rect.move(300, 100)
 toads.rect = toads.rect.move(500, 100)
 ufo.rect = ufo.rect.move(100, 300)
+race.rect = race.rect.move(300, 300)
 
 # initializing settings
 
