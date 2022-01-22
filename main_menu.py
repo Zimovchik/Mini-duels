@@ -3,8 +3,9 @@ import sys
 import pygame
 
 from tanks import tanks_run
-# from toads import toads_run
-from chickens import chickens_run
+from toads import toads_run
+
+# from chickens import chickens_run
 
 pygame.init()
 size = width, height = 800, 600
@@ -14,7 +15,7 @@ screen = pygame.display.set_mode(size)
 all_sprites = pygame.sprite.Group()
 games = pygame.sprite.Group()
 setting_btns = pygame.sprite.Group()
-
+pygame.display.set_caption('Main window')
 # window control vars
 running = True
 setting_open = False
@@ -65,7 +66,7 @@ def b():  # tanks btn func
 
 def c():  # toads btn func
     print("toads")
-    # toads_run()
+    toads_run(pygame.K_a, pygame.K_l)
 
 
 # initializing games' buttons

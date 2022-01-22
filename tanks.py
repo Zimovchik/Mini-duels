@@ -5,14 +5,13 @@ from math import cos, sin, radians
 import pygame
 
 WIDTH, HEIGHT = 800, 600
-PLAYERONEKEY = pygame.K_SPACE
-PLAYERTWOKEY = pygame.K_UP
-ANGLE_SPEED = 0.5
+PLAYERONEKEY = pygame.K_a
+PLAYERTWOKEY = pygame.K_l
+ANGLE_SPEED = 0.25
 BULLET_SPEED = 1.5
 BULLET_RADIUS = 10
 TANK_SPEED = 0.3
-players = [True, True]
-
+p_pos = ((700, 20), (80, 480))
 all_sprites = pygame.sprite.Group()
 boxes = pygame.sprite.Group()
 p1bullets = pygame.sprite.Group()
@@ -21,6 +20,8 @@ vertical_borders = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 tanks = pygame.sprite.Group()
 win_window_sprites = pygame.sprite.Group()
+
+players = [True, True]
 
 
 def rot_center(image, rect, angle):
@@ -79,7 +80,6 @@ class Bullet(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, tanks):
             sprite = pygame.sprite.spritecollideany(self, tanks)
             if sprite.get_player_number() != self.player_number:
-                sprite.kill()
                 sprite.death()
                 self.kill()
         elif pygame.sprite.spritecollideany(self, boxes):
@@ -177,14 +177,23 @@ class Tank(pygame.sprite.Sprite):
         )
 
     def death(self):
+        self.rect.move(10000, 10000)
         self.player_alive = False
         global players
         players[self.player_number - 1] = self.player_alive
 
+    def set_alive(self):
+        self.player_alive = True
+        global players
+        players[self.player_number - 1] = self.player_alive
+        self.rect.x = p_pos[self.player_number - 1][0]
+        self.rect.y = p_pos[self.player_number - 1][1]
+        self.pos = p_pos[self.player_number - 1]
+
 
 def win(screen_out, player):
     font = pygame.font.SysFont('arial', 50)
-    text = font.render(f'player {player} won', True, "blue")
+    text = font.render(f'player {player} won', True, "purple")
     text_x = WIDTH // 2 - text.get_width() // 2
     text_y = HEIGHT // 3 - text.get_height() // 2
     screen_out.blit(text, (text_x, text_y))
@@ -242,9 +251,13 @@ class win_window(pygame.sprite.Sprite):
         self.rect.y = 0
 
 
+p1 = Tank("red", 1, "tank player1.png", (700, 20))
+p2 = Tank("blue", 2, "tank player2.png", (80, 480))
+
+
 def tanks_run():
-    p1 = Tank("red", 1, "tank player1.png", (720, 20))
-    p2 = Tank("blue", 2, "tank player2.png", (80, 480))
+    global players
+    players = [True, True]
     pygame.init()
     pygame.display.set_caption('Tanks')
     size = WIDTH, HEIGHT
@@ -256,7 +269,8 @@ def tanks_run():
     Border(5, HEIGHT - 5, WIDTH - 5, HEIGHT - 5)
     Border(5, 5, 5, HEIGHT - 5)
     Border(WIDTH - 5, 5, WIDTH - 5, HEIGHT - 5)
-
+    p1.set_alive()
+    p2.set_alive()
     running = True
     while running:
         screen.fill((50, 255, 139))
@@ -264,6 +278,8 @@ def tanks_run():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                global tanks
+
             if event.type == pygame.KEYDOWN:
                 if event.key == PLAYERONEKEY:
                     p1.shoot()
