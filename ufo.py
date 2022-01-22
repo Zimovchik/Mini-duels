@@ -2,6 +2,7 @@ import pygame
 import os
 import sys
 from math import cos, sin, radians
+from random import choice
 
 WIDTH, HEIGHT = 800, 600
 PLAYERONEKEY = pygame.K_a
@@ -90,11 +91,13 @@ class Bullet(pygame.sprite.Sprite):
     def update(self):
         self.pos = self.pos[0] + self.vx, self.pos[1] + self.vy
         self.rect.x, self.rect.y = self.pos
-        if pygame.sprite.spritecollideany(self, vertical_borders):
+        if pygame.sprite.spritecollideany(self, horizontal_borders):
             self.wall_collision()
 
     def ufo_collision(self, speed_direction):
         self.vx = -self.vx
+        self.rect.move(-20, 0)
+        self.rect.x = 10000
         self.vy = self.vy + speed_direction * SPEED
 
     def wall_collision(self):
@@ -103,6 +106,7 @@ class Bullet(pygame.sprite.Sprite):
 
 p1 = Player(0, 1)
 p2 = Player(1, 1)
+ball = Bullet(0, 300)
 
 
 def ufo_run():
@@ -111,13 +115,12 @@ def ufo_run():
     size = WIDTH, HEIGHT
     screen = pygame.display.set_mode(size)
     clock = pygame.time.Clock()
-    Border(5, 5, WIDTH - 5, 5)
-    Border(5, HEIGHT - 5, WIDTH - 5, HEIGHT - 5)
-    Border(5, 5, 5, HEIGHT - 5)
-    Border(WIDTH - 5, 5, WIDTH - 5, HEIGHT - 5)
+    top = Border(5, 5, WIDTH - 5, 5)
+    bottom = Border(5, HEIGHT - 5, WIDTH - 5, HEIGHT - 5)
+    left = Border(5, 5, 5, HEIGHT - 5)
+    right = Border(WIDTH - 5, 5, WIDTH - 5, HEIGHT - 5)
     running = True
     while running:
-        screen.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -126,9 +129,12 @@ def ufo_run():
                     p1.change_direction()
                 elif event.key == PLAYERTWOKEY:
                     p2.change_direction()
+        screen.fill((0, 0, 0))
         all_sprites.update()
         players.update()
         all_sprites.draw(screen)
+        players.draw(screen)
+        balls.draw(screen)
         pygame.display.flip()
 
 
