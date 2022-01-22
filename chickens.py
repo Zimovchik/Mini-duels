@@ -10,7 +10,7 @@ BACKGROUND_COLOR = "#004400"
 PLAYER_SIZE = 64  # Размеры игрока
 TILE_SIZE = 16  # Размер клеток платформ (.)
 P1_BUTTON, P2_BUTTON = pygame.K_a, pygame.K_l  # Кнопки, отвечающие за игроков
-SPEED = 2  # Скорость движения всей системы
+SPEED = 4  # Скорость движения всей системы
 GRAVITY = 10
 
 all_sprites = pygame.sprite.Group()  # Группы спрайтов
@@ -18,6 +18,7 @@ platforms_sprites = pygame.sprite.Group()
 chicken_sprites = pygame.sprite.Group()
 finish_sprites = pygame.sprite.Group()
 portal_sprites = pygame.sprite.Group()
+circular_sprites = pygame.sprite.Group()
 
 chicken_pic1 = 'anime chicken1.png'  # Два варианта есть в принципе в папке data
 chicken_pic2 = 'anime chicken2.png'
@@ -26,6 +27,10 @@ background_pic = ''
 finish_image = 'finish.png'
 portal_pic1 = 'portal1.png'
 portal_pic2 = 'portal2.png'
+circular_pic = 'circulars.png'
+
+circular_rows = 1
+circular_columns = 2
 
 pygame.init()
 screen = pygame.display.set_mode(DISPLAY)  # Создаем окошко
@@ -53,7 +58,7 @@ def chickens_run():
         return image
 
     def generate_level(level):
-        new_players, objects, x, y, finish, portals = [], [], None, None, [], []
+        new_players, objects, x, y, finish, portals, circulars = [], [], None, None, [], [], []
         player_count = 1
 
         counter = 0
@@ -76,9 +81,14 @@ def chickens_run():
                     finish.append(Finish(x * 16, y * 16))
                 elif level[y][x] == '+':
                     portals.append(Portal(x*16, y*16, player_count))
+                elif level[y][x] == '$':
+                    do_rotation = False
+                    if level[y-1][x] == '-':
+                        do_rotation = True
+                    circulars.append(Circulars(circular_columns, circular_rows, x * 16, y * 16, do_rotation))
 
         # вернем игрока, а также размер поля в клетках
-        return new_players, objects, x, y, finish, portals
+        return new_players, objects, x, y, finish, portals, circulars
 
     def load_level(filename):
         filename = "data/maps/" + filename
@@ -101,7 +111,19 @@ def chickens_run():
             self.rect[0] += self.vx
 
     def endgame(lost_player_num):
-        pass
+        font = pygame.font.Font(None, 50)
+        w_player = 0
+        txt_clr = ''
+        if lost_player_num == 1:
+            w_player = 'blue'
+            txt_clr = (8, 75, 209)
+        elif lost_player_num == 2:
+            w_player = 'red'
+            txt_clr = (209, 8, 45)
+        text = font.render(f"Player {w_player} won!", True, txt_clr)
+        text_x = WIDTH // 2 - text.get_width() // 2
+        text_y = HEIGHT // 2 - text.get_height() // 2
+        screen.blit(text, (text_x, text_y))
 
     class Chicken(pygame.sprite.Sprite):  # Класс курицы (игрока)
         image1 = load_image(chicken_pic1)  # Картинка первого игрока
@@ -183,7 +205,10 @@ def chickens_run():
                     plat.vx = 0
                 for por in portals:
                     por.vx = 0
+                for cir in circulars:
+                    cir.vx = 0
                 endgame(self.player_number)  # финальный экран подведения итогов
+            self.check_circular_death()
 
         def get_collide_rect_down(self, plat):
             w = PLAYER_SIZE - (plat.rect.x - self.rect.x)
@@ -200,6 +225,25 @@ def chickens_run():
             else:
                 h = TILE_SIZE - (plat.rect.y - self.rect.y)
             return w, h
+
+        def check_circular_death(self): # Проверка на столкновение с пилой
+            if pygame.sprite.spritecollideany(self, circular_sprites):
+                for cir in circular_sprites:
+                    if pygame.sprite.collide_mask(self, cir):
+                        self.kill()
+                        self.isAlive = False  # игрок умирает а все в игре останавливается
+                        camera.vx = 0
+                        for fin in finishes:
+                            fin.vx = 0
+                        self.stop_another_player(self.player_number)
+                        for plat in platforms_sprites:
+                            plat.vx = 0
+                        for por in portals:
+                            por.vx = 0
+                        for cir in circulars:
+                            cir.vx = 0
+                        endgame(self.player_number)
+            return
 
         def change_gravity(self, time=0):
             if not self.canJump:  # если прыжок невозможен
@@ -301,7 +345,46 @@ def chickens_run():
                         fin.vx = 0
                     for por in portals:
                         por.vx = 0
+                    for cir in circulars:
+                        cir.vx = 0
                     endgame(w_player.player_number)  # финальный экран подведения итогов
+
+    class Circulars(pygame.sprite.Sprite):
+        # циркулярные пилы, убивают игрока
+        sheet = load_image(circular_pic)
+
+        def __init__(self, columns, rows, x, y, rotation):
+            super().__init__(circular_sprites)
+            self.add(circular_sprites)
+            self.frames = []
+            print(rotation)
+            self.do_rotation = rotation
+            self.x, self.y = x, y
+            self.cut_sheet(Circulars.sheet, columns, rows)
+            self.cur_frame = 0
+            self.image = self.frames[self.cur_frame]
+            self.rect = self.image.get_rect()
+            self.rect.x, self.rect.y = x, y
+            self.vx = -SPEED
+
+        def cut_sheet(self, sheet, columns, rows):
+            self.rect = pygame.Rect(self.x, self.y, PLAYER_SIZE,
+                                    PLAYER_SIZE)
+            for j in range(rows):
+                for i in range(columns):
+                    frame_location = (self.rect.w * i, self.rect.h * j)
+                    self.frames.append(sheet.subsurface(pygame.Rect(
+                        frame_location, self.rect.size)))
+
+        def update(self):
+            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            if self.do_rotation:
+                self.image = pygame.transform.flip(self.frames[self.cur_frame], False, True)
+            else:
+                self.image = self.frames[self.cur_frame]
+
+        def draw(self):
+            self.rect[0] += self.vx
 
     class Portal(pygame.sprite.Sprite):
         # начало игры, откуда выходят курицы
@@ -326,14 +409,14 @@ def chickens_run():
         def draw(self):
             self.rect[0] += self.vx
 
-
     screen_rect = (0, 0, WIDTH, HEIGHT)
     camera = Camera(0, 0)
-    players, objects, level_x, level_y, finishes, portals = generate_level(load_level('chicken_map'))
+    players, objects, level_x, level_y, finishes, portals, circulars = generate_level(load_level('chicken_map'))
     player1, player2 = players
     print(len(objects))
 
     def main():
+
         while True:  # Основной цикл программы
             time_passed = clock.tick(60)
 
@@ -359,10 +442,14 @@ def chickens_run():
                 fin.check_ending()
             for por in portals:
                 por.draw()
+            for cir in circulars:
+                cir.update()
+                cir.draw()
 
             portal_sprites.draw(screen)
             chicken_sprites.draw(screen)  # Отрисовка спрайтов
             platforms_sprites.draw(screen)
+            circular_sprites.draw(screen)
             pygame.display.update()  # обновление и вывод всех изменений на экран
             # pygame.time.wait(30)
 
