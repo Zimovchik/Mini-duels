@@ -65,7 +65,7 @@ def b():  # tanks btn func
 
 def c():  # toads btn func
     print("toads")
-    toads_run()
+    toads_run(PLAYERONEKEY, PLAYERTWOKEY)
 
 
 # initializing games' buttons
