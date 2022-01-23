@@ -52,7 +52,8 @@ keys = {pygame.K_a: 'a',
         pygame.K_w: 'w',
         pygame.K_x: 'x',
         pygame.K_y: 'y',
-        pygame.K_z: 'z'}
+        pygame.K_z: 'z',
+        'change': '> <'}
 
 
 def load_image(name, colorkey=None):
@@ -126,6 +127,14 @@ def sett():
 def btn_change(player):
     global button_registration
     button_registration = player
+    if button_registration == 1:
+        first_btn.im_change(
+            print_key(pygame.transform.scale(load_image('button_red.png'), (128, 64)),
+                      'change'))
+    elif button_registration == 2:
+        scnd_btn.im_change(
+            print_key(pygame.transform.scale(load_image('button_blu.png'), (128, 64)),
+                      'change'))
 
 
 # initializing games' buttons
@@ -150,6 +159,9 @@ race.press = e
 
 settings = Button(games, all_sprites, pygame.transform.scale(load_image("gear.png"), (64, 64)))
 settings.press = sett
+
+settings_back = Button(setting_btns, all_sprites, pygame.transform.scale(load_image("back_button.png"), (128, 64)))
+settings_back.press = sett
 
 
 def print_key(image, key):
@@ -176,6 +188,7 @@ race.rect = race.rect.move(300, 300)
 timer.rect = timer.rect.move(500, 300)
 
 settings.rect = settings.rect.move(400 - 32, 500)
+settings_back.rect = settings_back.rect.move(64, height - 128)
 first_btn.rect = first_btn.rect.move(150, 200)
 scnd_btn.rect = scnd_btn.rect.move(width - 150 - 128, 200)
 
@@ -205,12 +218,14 @@ while running:
                 if event.type == pygame.KEYDOWN:
                     new_btn = event.key
                     if button_registration == 1:
-                        PLAYERONEKEY = new_btn
+                        if PLAYERTWOKEY != new_btn:
+                            PLAYERONEKEY = new_btn
                         first_btn.im_change(
                             print_key(pygame.transform.scale(load_image('button_red.png'), (128, 64)),
                                       PLAYERONEKEY))
                     elif button_registration == 2:
-                        PLAYERTWOKEY = new_btn
+                        if PLAYERONEKEY != new_btn:
+                            PLAYERTWOKEY = new_btn
                         scnd_btn.im_change(
                             print_key(pygame.transform.scale(load_image('button_blu.png'), (128, 64)),
                                       PLAYERTWOKEY))
