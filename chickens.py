@@ -129,7 +129,7 @@ def chickens_run(key_one, key_two):
 
     def tie():
         font = pygame.font.Font(None, 50)
-        text = font.render(f"Tie!", True, (0, 0, 0))
+        text = font.render(f"Draw!", True, (0, 0, 0))
         text_x = WIDTH // 2 - text.get_width() // 2
         text_y = HEIGHT // 2 - text.get_height() // 2
         screen.blit(text, (text_x, text_y))
@@ -445,6 +445,17 @@ def chickens_run(key_one, key_two):
         def draw(self):
             self.rect[0] += self.vx
 
+    def reset():
+        global all_sprites, platforms_sprites, chicken_sprites, finish_sprites, portal_sprites, \
+            circular_sprites, running
+        all_sprites = pygame.sprite.Group()
+        platforms_sprites = pygame.sprite.Group()
+        chicken_sprites = pygame.sprite.Group()
+        finish_sprites = pygame.sprite.Group()
+        portal_sprites = pygame.sprite.Group()
+        circular_sprites = pygame.sprite.Group()
+        running = True
+
     screen_rect = (0, 0, WIDTH, HEIGHT)
     camera = Camera(0, 0)
     players, objects, level_x, level_y, finishes, portals, circulars = generate_level(
@@ -488,6 +499,7 @@ def chickens_run(key_one, key_two):
             circular_sprites.draw(screen)
             pygame.display.update()  # обновление и вывод всех изменений на экран
             # pygame.time.wait(30)
+        reset()
 
     clock = pygame.time.Clock()
     main()
