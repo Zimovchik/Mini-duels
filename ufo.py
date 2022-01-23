@@ -33,8 +33,9 @@ def load_image(name, colorkey=None):
 
 
 def reset():
-    global all_sprites, balls, vertical_borders, horizontal_borders, players, bg, score_board
+    global all_sprites, balls, vertical_borders, horizontal_borders, players, bg, score_board, score
     global p1, p2, ball, red_score, blue_score
+    score = [0, 0]
     all_sprites = pygame.sprite.Group()
     balls = pygame.sprite.Group()
     vertical_borders = pygame.sprite.Group()

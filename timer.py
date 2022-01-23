@@ -34,10 +34,10 @@ def igra(kol1, kol2, raund, time0):
     screen.blit(font2.render(text2, True, (0, 0, 0)), (130, 200))
 
     screen.fill(pygame.Color('blue'), (5, 5, 250, 150))
-    screen.blit(font2.render(f'Нажмите на клавишу: q', True, (255, 255, 255)), (17, 53))
+    screen.blit(font2.render(f'Нажмите на клавишу: a', True, (255, 255, 255)), (17, 53))
 
     screen.fill(pygame.Color('red'), (545, 445, 250, 150))
-    screen.blit(font2.render(f'Нажмите на клавишу: p', True, (255, 255, 255)), (557, 494))
+    screen.blit(font2.render(f'Нажмите на клавишу: l', True, (255, 255, 255)), (557, 494))
 
     time1 = '0'
     time2 = '0'
