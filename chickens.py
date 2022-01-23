@@ -39,7 +39,8 @@ bg = pygame.Surface((WIDTH, HEIGHT))  # Создание видимой пове
 bg.fill(pygame.Color(BACKGROUND_COLOR))  # Заливаем поверхность сплошным цветом
 
 
-def chickens_run():
+def chickens_run(key_one, key_two):
+    P1_BUTTON, P2_BUTTON = key_one, key_two
     pygame.display.set_caption("Chickens")
 
     def load_image(name, colorkey=None, is_plat=0):  # Обрабатывающая картинки функция

@@ -100,7 +100,9 @@ start, finish = start_and_finish("start"), start_and_finish("finish")
 reset()
 
 
-def race_run():
+def race_run(key_one, key_two):
+    PLAYERONEKEY = key_one
+    PLAYERTWOKEY = key_two
     pygame.display.set_caption("race")
     running = True
     while running:

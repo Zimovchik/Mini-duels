@@ -256,7 +256,9 @@ p1 = Tank("red", 1, "tank player1.png", (700, 20))
 p2 = Tank("blue", 2, "tank player2.png", (80, 480))
 
 
-def tanks_run():
+def tanks_run(key_one, key_two):
+    PLAYERONEKEY = key_one
+    PLAYERTWOKEY = key_two
     global players
     players = [True, True]
     pygame.init()
