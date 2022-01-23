@@ -338,6 +338,3 @@ def toads_run(key_one, key_two):
             tie(screen)
         pygame.display.flip()
     reset()
-
-
-

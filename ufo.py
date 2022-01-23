@@ -20,6 +20,7 @@ BULLET_SPEED = 0.7
 spawns = [(45, HEIGHT // 2 - 64), (700, HEIGHT // 2 - 64)]
 bulletspawns = [(150, HEIGHT // 2 - 10, 1), (550, HEIGHT // 2 - 10, -1)]
 score = [0, 0]
+player_color = [pygame.color.Color('blue'), pygame.color.Color('red')]
 
 
 def load_image(name, colorkey=None):
@@ -33,6 +34,40 @@ def load_image(name, colorkey=None):
 
 def star_generator(n):
     return [(random.randint(5, 20), random.randint(0, 800), random.randint(0, 600)) for i in range(n)]
+
+
+def round_start():
+    Bullet(*bulletspawns[random.randint(0, 1)])
+    p1.set_position(*spawns[0])
+    p1.set_speed(0)
+    p1.set_direction(1)
+    p2.set_position(*spawns[1])
+    p2.set_speed(0)
+    p2.set_direction(1)
+    players.update()
+    pygame.display.flip()
+    for i in range(3, 0, -1):
+        screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        font = pygame.font.SysFont('arial', 50)
+        text = font.render(str(i), True, pygame.Color('yellow'))
+        text_x = WIDTH // 2 - text.get_width() // 2
+        text_y = HEIGHT // 2 - text.get_height() // 2
+        bg.draw(screen)
+        all_sprites.draw(screen)
+        players.draw(screen)
+        balls.draw(screen)
+        screen.blit(text, (text_x, text_y))
+        pygame.display.flip()
+        pygame.time.delay(1000)
+
+
+def win(screen_out, player):
+    font = pygame.font.SysFont('arial', 50)
+    text = font.render(f'player {player + 1} won', True, player_color[player])
+    text_x = WIDTH // 2 - text.get_width() // 2
+    text_y = HEIGHT // 2 - text.get_height() // 2
+    screen_out.blit(text, (text_x, text_y))
+    pygame.display.flip()
 
 
 class Score_board(pygame.sprite.Sprite):
@@ -108,6 +143,15 @@ class Player(pygame.sprite.Sprite):
         else:
             self.pos = self.pos[0], other.rect.bottom
 
+    def set_position(self, x, y):
+        self.pos = (x, y)
+
+    def set_speed(self, v):
+        self.vy = v
+
+    def set_direction(self, dir):
+        self.speed_direction = dir
+
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y, dir):
@@ -136,7 +180,8 @@ class Bullet(pygame.sprite.Sprite):
                 score[1] += 1
                 red_score.set_score(score[1])
             self.kill()
-            ball = Bullet(*bulletspawns[random.randint(0, 1)])
+            if 3 not in score:
+                round_start()
         self.velocity_limit()
 
     def ufo_collision(self, speed_direction):
@@ -156,7 +201,9 @@ class Bullet(pygame.sprite.Sprite):
 
 
 p1 = Player(0, 1)
+p1.set_speed(0)
 p2 = Player(1, 1)
+p2.set_speed(0)
 ball = Bullet(*bulletspawns[random.randint(0, 1)])
 for i in star_generator(50):
     Star(*i)
@@ -179,20 +226,28 @@ def ufo_run(key_one, key_two):
     left = Border(5, 5, 5, HEIGHT - 5)
     right = Border(WIDTH - 5, 5, WIDTH - 5, HEIGHT - 5)
     running = True
+    ending = False
     while running:
         screen.fill([19, 11, 77])
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == PLAYERONEKEY:
                     p1.change_direction()
                 elif event.key == PLAYERTWOKEY:
                     p2.change_direction()
-        all_sprites.update()
-        players.update()
-        bg.draw(screen)
-        all_sprites.draw(screen)
-        players.draw(screen)
-        balls.draw(screen)
-        pygame.display.flip()
+        if not ending:
+            all_sprites.update()
+            players.update()
+            bg.draw(screen)
+            all_sprites.draw(screen)
+            players.draw(screen)
+            balls.draw(screen)
+            pygame.display.flip()
+        if 3 in score and not ending:
+            win(screen, score.index(3))
+            ending = True
+
+
+ufo_run(pygame.K_a, pygame.K_l)
