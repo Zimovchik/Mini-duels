@@ -1,21 +1,25 @@
+import random
 import pygame
 import os
 import sys
-from math import cos, sin, radians
-from random import choice
 
+ball_spawn = False
 WIDTH, HEIGHT = 800, 600
-PLAYERONEKEY = pygame.K_a
-PLAYERTWOKEY = pygame.K_l
+PLAYERONEKEY = pygame.K_s
+PLAYERTWOKEY = pygame.K_k
 SPEED = 0.25
 all_sprites = pygame.sprite.Group()
 balls = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 players = pygame.sprite.Group()
+bg = pygame.sprite.Group()
+score_board = pygame.sprite.Group()
 BALL_RADIUS = 10
-BULLET_SPEED = 0.5
-spawns = [(50, 32), (700, 400)]
+BULLET_SPEED = 0.7
+spawns = [(45, HEIGHT // 2 - 64), (700, HEIGHT // 2 - 64)]
+bulletspawns = [(150, HEIGHT // 2 - 10, 1), (550, HEIGHT // 2 - 10, -1)]
+score = [0, 0]
 
 
 def load_image(name, colorkey=None):
@@ -25,6 +29,36 @@ def load_image(name, colorkey=None):
         sys.exit()
     image = pygame.image.load(fullname)
     return image
+
+
+def star_generator(n):
+    return [(random.randint(5, 20), random.randint(0, 800), random.randint(0, 600)) for i in range(n)]
+
+
+class Score_board(pygame.sprite.Sprite):
+    def __init__(self, score, x, y):
+        super().__init__(all_sprites)
+        self.score = score
+        self.image = load_image(f'ufo {score}.png')
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.pos = (x, y)
+
+    def set_score(self, n):
+        self.image = load_image(f'ufo {n}.png')
+        self.rect = self.image.get_rect()
+        self.rect.x = self.pos[0]
+        self.rect.y = self.pos[1]
+
+
+class Star(pygame.sprite.Sprite):
+    def __init__(self, r, x, y):
+        super().__init__(all_sprites)
+        self.image = pygame.transform.scale(load_image("ufo_star.png"), (r, r))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
 
 
 class Border(pygame.sprite.Sprite):  # window borders
@@ -76,7 +110,7 @@ class Player(pygame.sprite.Sprite):
 
 
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, dir):
         super().__init__(balls, all_sprites)
         self.pos = (x, y)
         self.radius = BALL_RADIUS
@@ -85,14 +119,25 @@ class Bullet(pygame.sprite.Sprite):
         pygame.draw.circle(self.image, pygame.Color("red"), (self.radius, self.radius), self.radius)
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x, y
-        self.vx = BULLET_SPEED
+        self.vx = BULLET_SPEED * dir
         self.vy = 0
 
     def update(self):
         self.pos = self.pos[0] + self.vx, self.pos[1] + self.vy
-        self.rect.x, self.rect.y = self.pos
+        self.rect.x, self.rect.y = self.pos[0], self.pos[1]
         if pygame.sprite.spritecollideany(self, horizontal_borders):
             self.wall_collision()
+        elif pygame.sprite.spritecollideany(self, vertical_borders):
+            sprite = pygame.sprite.spritecollideany(self, vertical_borders)
+            if self.rect.x <= 5:
+                score[0] += 1
+                blue_score.set_score(score[0])
+            elif self.rect.x >= 595:
+                score[1] += 1
+                red_score.set_score(score[1])
+            self.kill()
+            ball = Bullet(*bulletspawns[random.randint(0, 1)])
+        self.velocity_limit()
 
     def ufo_collision(self, speed_direction):
         self.vx = -self.vx
@@ -100,27 +145,42 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.x = 10000
         self.vy = self.vy + speed_direction * SPEED
 
+    def velocity_limit(self):
+        if abs(int(self.vx)) > 2:
+            self.vx = 2 * abs(self.vx) / self.vx
+        if abs(int(self.vy)) > 2:
+            self.vy = 2 * abs(self.vy) / self.vy
+
     def wall_collision(self):
         self.vy = -self.vy
 
 
 p1 = Player(0, 1)
 p2 = Player(1, 1)
-ball = Bullet(0, 300)
+ball = Bullet(*bulletspawns[random.randint(0, 1)])
+for i in star_generator(50):
+    Star(*i)
+red_score = Score_board(0, 350, 10)
+blue_score = Score_board(0, 420, 10)
 
 
-def ufo_run():
+def ufo_run(key_one, key_two):
     pygame.init()
     pygame.display.set_caption('UFO')
     size = WIDTH, HEIGHT
     screen = pygame.display.set_mode(size)
-    clock = pygame.time.Clock()
+
+    PLAYERONEKEY = key_one
+    PLAYERTWOKEY = key_two
+
+    # clock = pygame.time.Clock()
     top = Border(5, 5, WIDTH - 5, 5)
     bottom = Border(5, HEIGHT - 5, WIDTH - 5, HEIGHT - 5)
     left = Border(5, 5, 5, HEIGHT - 5)
     right = Border(WIDTH - 5, 5, WIDTH - 5, HEIGHT - 5)
     running = True
     while running:
+        screen.fill([19, 11, 77])
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -129,12 +189,10 @@ def ufo_run():
                     p1.change_direction()
                 elif event.key == PLAYERTWOKEY:
                     p2.change_direction()
-        screen.fill((0, 0, 0))
         all_sprites.update()
         players.update()
+        bg.draw(screen)
         all_sprites.draw(screen)
         players.draw(screen)
         balls.draw(screen)
         pygame.display.flip()
-
-
