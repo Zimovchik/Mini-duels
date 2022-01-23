@@ -7,7 +7,7 @@ from toads import toads_run
 from ufo import ufo_run
 from chickens import chickens_run
 
-# from race import race_run
+from race import race_run
 
 pygame.init()
 size = width, height = 800, 600
@@ -76,13 +76,13 @@ def c():  # toads btn func
 
 def d():
     print('ufos')
-    ufo_run()
+    ufo_run(pygame.K_a, pygame.K_l)
     pygame.display.set_caption("Menu")
 
 
 def e():
     print("race")
-    # race_run()
+    race_run()
     pygame.display.set_caption("Menu")
 
 
