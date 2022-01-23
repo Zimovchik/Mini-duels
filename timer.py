@@ -2,8 +2,8 @@ from random import randint
 import pygame
 
 pygame.init()
-font1 = pygame.font.SysFont('arial', 100)
-font2 = pygame.font.SysFont('arial', 25)
+font1 = pygame.font.SysFont('arial', 70)
+font2 = pygame.font.SysFont('arial', 15)
 font3 = pygame.font.SysFont('arial', 35)
 screen = pygame.display.set_mode((800, 600))
 PLAYERONEKEY = pygame.K_a
