@@ -248,6 +248,3 @@ def ufo_run(key_one, key_two):
         if 3 in score and not ending:
             win(screen, score.index(3))
             ending = True
-
-
-ufo_run(pygame.K_a, pygame.K_l)

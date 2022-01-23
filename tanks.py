@@ -22,6 +22,7 @@ tanks = pygame.sprite.Group()
 win_window_sprites = pygame.sprite.Group()
 
 players = [True, True]
+players_colors = ['blue', 'red']
 
 
 def rot_center(image, rect, angle):
@@ -193,7 +194,7 @@ class Tank(pygame.sprite.Sprite):
 
 def win(screen_out, player):
     font = pygame.font.SysFont('arial', 50)
-    text = font.render(f'player {player} won', True, "purple")
+    text = font.render(f'player {player + 1} won', True, players_colors[player])
     text_x = WIDTH // 2 - text.get_width() // 2
     text_y = HEIGHT // 3 - text.get_height() // 2
     screen_out.blit(text, (text_x, text_y))
@@ -301,5 +302,5 @@ def tanks_run():
         p1bullets.update()
         p2bullets.update()
         if not all(players):
-            win(screen, players.index(False) + 1)
+            win(screen, players.index(False))
         pygame.display.flip()
