@@ -120,6 +120,3 @@ def race_run():
         cars.draw(screen)
         win_img.draw(screen)
         pygame.display.flip()
-
-
-race_run()

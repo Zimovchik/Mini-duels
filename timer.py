@@ -114,19 +114,23 @@ def igra(kol1, kol2, raund, time0):
     return dt1, dt2
 
 
-running = True
-time0 = 0
-
-while kol1 < 3 and kol2 < 3:
-    dt1, dt2 = igra(kol1, kol2, raund, time0)
-    raund += 1
-    if dt1 > dt2:
-        kol2 += 1
-    elif dt1 < dt2:
-        kol1 += 1
-    else:
-        kol1 += 1
-        kol2 += 1
-    print(kol1, kol2)
-
-pygame.quit()
+def timer_run():
+    running = True
+    kol1 = 0
+    kol2 = 0
+    raund = 1
+    t1 = 0
+    t2 = 0
+    time0 = 0
+    reset()
+    while kol1 < 3 and kol2 < 3:
+        dt1, dt2 = igra(kol1, kol2, raund, time0)
+        raund += 1
+        if dt1 > dt2:
+            kol2 += 1
+        elif dt1 < dt2:
+            kol1 += 1
+        else:
+            kol1 += 1
+            kol2 += 1
+        print(kol1, kol2)

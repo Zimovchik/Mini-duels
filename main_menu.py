@@ -6,7 +6,7 @@ from tanks import tanks_run
 from toads import toads_run
 from ufo import ufo_run
 from chickens import chickens_run
-
+from timer import timer_run
 from race import race_run
 
 pygame.init()
@@ -86,6 +86,12 @@ def e():
     pygame.display.set_caption("Menu")
 
 
+def f():
+    print("timer")
+    timer_run()
+    pygame.display.set_caption("Menu")
+
+
 # initializing games' buttons
 
 chicken = Button(games, all_sprites, pygame.transform.scale(load_image("chickens.png"), (150, 150)))
@@ -97,12 +103,15 @@ toads.press = c
 ufo = Button(games, all_sprites, pygame.transform.scale(load_image("ufos.png"), (150, 150)))
 ufo.press = d
 race = Button(games, all_sprites, pygame.transform.scale(load_image("race.png"), (150, 150)))
+race.press = e
+timer = Button(games, all_sprites, pygame.transform.scale(load_image("timer.png"), (150, 150)))
+timer.press = f
 chicken.rect = chicken.rect.move(100, 100)
 tanks.rect = tanks.rect.move(300, 100)
 toads.rect = toads.rect.move(500, 100)
 ufo.rect = ufo.rect.move(100, 300)
 race.rect = race.rect.move(300, 300)
-
+timer.rect = timer.rect.move(500, 300)
 # initializing settings
 
 # main cycle
