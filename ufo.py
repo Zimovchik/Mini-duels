@@ -7,7 +7,7 @@ ball_spawn = False
 WIDTH, HEIGHT = 800, 600
 PLAYERONEKEY = pygame.K_s
 PLAYERTWOKEY = pygame.K_k
-SPEED = 0.25
+SPEED = 0.5
 all_sprites = pygame.sprite.Group()
 balls = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
@@ -16,7 +16,7 @@ players = pygame.sprite.Group()
 bg = pygame.sprite.Group()
 score_board = pygame.sprite.Group()
 BALL_RADIUS = 10
-BULLET_SPEED = 0.7
+BULLET_SPEED = 1
 spawns = [(45, HEIGHT // 2 - 64), (700, HEIGHT // 2 - 64)]
 bulletspawns = [(150, HEIGHT // 2 - 10, 1), (550, HEIGHT // 2 - 10, -1)]
 score = [0, 0]
@@ -30,6 +30,27 @@ def load_image(name, colorkey=None):
         sys.exit()
     image = pygame.image.load(fullname)
     return image
+
+
+def reset():
+    global all_sprites, balls, vertical_borders, horizontal_borders, players, bg, score_board
+    global p1, p2, ball, red_score, blue_score
+    all_sprites = pygame.sprite.Group()
+    balls = pygame.sprite.Group()
+    vertical_borders = pygame.sprite.Group()
+    horizontal_borders = pygame.sprite.Group()
+    players = pygame.sprite.Group()
+    bg = pygame.sprite.Group()
+    score_board = pygame.sprite.Group()
+    p1 = Player(0, 1)
+    p1.set_speed(0)
+    p2 = Player(1, 1)
+    p2.set_speed(0)
+    ball = Bullet(*bulletspawns[random.randint(0, 1)])
+    for i in star_generator(50):
+        Star(*i)
+    red_score = Score_board(0, 350, 10)
+    blue_score = Score_board(0, 420, 10)
 
 
 def star_generator(n):
@@ -212,6 +233,7 @@ blue_score = Score_board(0, 420, 10)
 
 
 def ufo_run(key_one, key_two):
+    reset()
     pygame.init()
     pygame.display.set_caption('UFO')
     size = WIDTH, HEIGHT
