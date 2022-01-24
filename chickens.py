@@ -459,7 +459,7 @@ def chickens_run(key_one, key_two):
     screen_rect = (0, 0, WIDTH, HEIGHT)
     camera = Camera(0, 0)
     players, objects, level_x, level_y, finishes, portals, circulars = generate_level(
-        load_level('chicken_map'))
+        load_level('chicken_map.txt'))
     player1, player2 = players
 
     def main():
